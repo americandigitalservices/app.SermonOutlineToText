@@ -1,0 +1,351 @@
+Delivered-To: tech@cityharvestalbany.com
+Received: by 2002:a05:6a11:6b8a:b0:75b:465e:fdad with SMTP id xb10csp972431pxb;
+        Tue, 6 Oct 2026 10:20:32 -0700 (PDT)
+X-Forwarded-Encrypted: i=5; AKwUvBzBuToYpsqNGRlNq+3xgE/wqLeC7xM8wjUugPRiqzh+CD0oSahj17LWWF4BI0O4XTeyrETS@cityharvestalbany.com
+X-Received: by 2002:a05:6820:4df5:b0:6d7:3613:de8a with SMTP id 006d021491bc7-6e555877850mr1474345eaf.74.1791307232138;
+        Tue, 06 Oct 2026 10:20:32 -0700 (PDT)
+ARC-Seal: i=4; a=rsa-sha256; t=1791307232; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=EoLxllaOBtxR1Umgaq5NKodAhYwZydkry9C8sE1vKMwWc5M1EtQKpZafDPfrlzxWKX
+         e1U5XbncJpME/cToeTqknQSSP6/GyYcJCouf8Jgskxl/zgFLSwikYsxjvVvrmwquZojW
+         HEertndsvPZpOsBnM8RWoIUpgLoAXcouqvsvxIlrGNLvEqqlPugBrlSA59zRN3MaGoZq
+         yT74KxUtwhwdjUzFP77mo2W3YCRPC7gCNJHpvRZff9dq5UitQ0wqcPxpEMPVuyGNIVJm
+         w01zD6LfEUwxXKqE2GSOOJLNSXVafxfsyhUXVbeacKmIK/QGrtGuXSdaCry7nNqU/jwz
+         Hs3g==
+ARC-Message-Signature: i=4; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=XaBjFcSDNyCrpu13Y8jdFR0xwXunWZOdfKI3weOkbac=;
+        fh=yKdkwtBiGwgTPAXBVEF0oMjmJhzXM1oTpTuEElRCq38=;
+        b=kQZ6tUNeLEihlpQlwABzv/CbiAnxr8zgK2UrV8GUbheOUkqm9uB+9xNvCRnkmMtg8b
+         qbbBT5JS8gLW9w9/v2xb5e9ds80Xrr4nPzZ9pzj1eWQZxiC5kRUsF9sl1aN4xCLCVJ5Q
+         QVmPleD9SRHpjwPjWxQqr5xpUT0U2LgjBkTNTf0kWKTBLCcx0xDdluV1bZvtVBTY/HIB
+         mcMrtL3W0WIfEjgi5310SF//maPA9TOHQn0sJR09q5e5m6sOIuIv2tg25LLdiEytPXjF
+         XrNAaLbewVa98zmkPiFGr3LguarAbosmTRuSYaeUW7dZUoSHAt8Q1weD3jjEvgcLDza9
+         H76A==;
+        dara=google.com
+ARC-Authentication-Results: i=4; mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=i+10Gd4k;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbx63stlamgqerfs2eiq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBX63STLAMGQERFS2EIQ@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Return-Path: <mediateam+bncBDTIPMMHX4HBBX63STLAMGQERFS2EIQ@cityharvestalbany.com>
+Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+        by mx.google.com with SMTPS id 46e09a7af769-82acfdaf5b3sor116727a34.1.2026.10.06.10.20.31
+        for <tech@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 06 Oct 2026 10:20:32 -0700 (PDT)
+Received-SPF: pass (google.com: domain of mediateam+bncbdtipmmhx4hbbx63stlamgqerfs2eiq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=i+10Gd4k;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbx63stlamgqerfs2eiq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBX63STLAMGQERFS2EIQ@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+ARC-Seal: i=3; a=rsa-sha256; t=1791307231; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=QStatMkl1M9qjwxHOvQ5MuQDt+lJUVfyU0j74F6oSeUhKapt9d+hX6IKn2g9CL6Zyh
+         9iWkCJlz4RHkXpEf2okjQp+LaldYm9IDQmjKwJHVDhXBLAZ1sonbjd9VIHpS1f4v8Eqf
+         OUbZLiKbzKmFK4LTh/S7VP+eor8nsSHTMpqXTyw7Mv9kk/HUWopRldKcqieEdTx0itWr
+         4kxpeDnCfMJf/6e1mD9K1G2BBvQ3GBvRpMnBFIZ7mHnn29P0gwnoqfe61394O2lJX5zZ
+         TjyMmAWnCn50xDodY+lIaV7orsBmL3XQnON1/V+0k+L6OKFu29Y3yrpDTK/AsfTD+uzM
+         MHmQ==
+ARC-Message-Signature: i=3; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=XaBjFcSDNyCrpu13Y8jdFR0xwXunWZOdfKI3weOkbac=;
+        fh=yKdkwtBiGwgTPAXBVEF0oMjmJhzXM1oTpTuEElRCq38=;
+        b=hyZlk5SGmp1eOmfBwtA+gLm1Cz7f4YPx4InBH6oU3XuZyec8O/I+QNs5kgoP7a4GvN
+         x7QD7y2lt+PGor4HxuLECbNJBdWCd7G9eGM+yYABB7+jugi+IosmENgmjEFd62ZbeKBN
+         +kCViFL1WfiJQ8R08OjQdonFncIfTPtYKRG8EmkftgtIKwB4cV6sEUxm+AlopQoO3JYB
+         wZk21OjT0fV/lAGYrFxj1eFVk/ljCQa36hkicUxrhHEY59/Ge/o+4FTF/8NgE5CTZeKH
+         uJkxB3dGMrm9APmVIgaRrJk562DgLLT6QVVU/lmEll0KCO4ID1JLiSRxmnm5GR4Zx6DK
+         NXBw==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=3; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b="D2N/A3sL";
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=cityharvestalbany-com.20251104.gappssmtp.com; s=20251104; t=1791307231; x=1791912031; darn=cityharvestalbany.com;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:x-original-authentication-results
+         :x-original-sender:content-type:to:subject:message-id:date:from
+         :mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=XaBjFcSDNyCrpu13Y8jdFR0xwXunWZOdfKI3weOkbac=;
+        b=i+10Gd4kt98uAt5fvnufXifXAMTramWKg/76DSjduf7bkJVi04QjMxLomN6CrbayUn
+         nMtJwOcUvtHnAbzEk2DmBmlhTRr+DgBGf/UC3SF6XF3yiyAsONVqR4y3JtQMjH2vy4iq
+         Qe+IfPahYZLNCvLxS30oXBu9Xal3k/DyIwX6U4a/DEucYW5gfdYbt0U1FAzkHymeY/Fk
+         f5nd6FrFNaNbuA0lwnjyFrDSJ7/uGi1WpRnXG+2TuAksw+xw5l8A0MuRe1lxBKcYO9QR
+         /q97suj2y2FpfMoreRb8m36oHXASxxpHjxI3IPApMd2wm/eyA0zH5zAWnG92RWB6E+7a
+         /qbw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1791307231; x=1791912031;
+        h=list-unsubscribe:list-archive:list-help:list-post
+         :x-spam-checked-in-group:list-id:mailing-list:precedence:reply-to
+         :x-original-authentication-results:x-original-sender:content-type:to
+         :subject:message-id:date:from:mime-version:x-gm-gg:x-beenthere
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=XaBjFcSDNyCrpu13Y8jdFR0xwXunWZOdfKI3weOkbac=;
+        b=FWmIeTchxA0Ccww9yE6GOL1Ybi51+/PGrhovDRB36N7BDzgQTpGrSBhjx5a+7iRyHN
+         ZnqoZ8fI9e1jJu6FWNaHcvF9Rnuay+P4QZHqVLUfxaIs9hxVMamPwabgHJDHJdI0zTRT
+         aujeVITEqBBj6itTRPI9WLM3c4VhM9foaxVt+G5b1Xra4CKIqWY3lRmTqBkJpn1gGGUx
+         1Nhfid323LiuCAH8/OLuGgn/sHGQc8j23Fefv/ckmdo5FoFkluB2TFRNTHpdXjUL+lPs
+         memoI0VGszBDSuGfqxkm0amAQQ8EdyEYdtxIC2TWJnvJw/LB4WNMtdKsaYkyBgFSSISk
+         4zUQ==
+X-Forwarded-Encrypted: i=3; AKwUvBzTRDlaeeQOqbzmTPQVYXeaW34Tr2XvzIZRRFt9A3XmyLsWTpwzwgzr2UEJ4Ysm8ariEgMQ@cityharvestalbany.com
+X-Gm-Message-State: AFuF++ldXkbXcRcSl4zkv1/JBrejXtHbYKYCigAAhNhfHayUCfko4tgM
+	WpYh/ijQVlnLxkszEoW0ivyB3MbBntBDRb/4lT7BBOBq66ZCHD+T16WXHgeo5lwzJuqsIA==
+X-Received: by 2002:a05:6820:198d:b0:6c9:80d9:5f5 with SMTP id 006d021491bc7-6e555291e86mr1699252eaf.54.1791307231363;
+        Tue, 06 Oct 2026 10:20:31 -0700 (PDT)
+X-BeenThere: mediateam@cityharvestalbany.com; h="ATskLdecJ8PVCMn28VlcML8zoIPJaqRhtZmVtJ0dEuuIGlYJBg=="
+Received: by 2002:a05:6820:55da:20b0:6ca:36e9:afd1 with SMTP id
+ 006d021491bc7-6e78a176b91ls50598eaf.0.-pod-prod-02-us; Tue, 06 Oct 2026
+ 10:20:30 -0700 (PDT)
+X-Forwarded-Encrypted: i=3; AKwUvBysPaptYN4e0NPgC7wE47RHk7BldXWEkT01rFm1OGpBw/Y7XhOP10IMGhY3P80dXb3SgAYApWFTjyE=@cityharvestalbany.com
+X-Received: by 2002:a05:6820:f031:b0:6dd:4f30:258f with SMTP id 006d021491bc7-6e555291b9amr1799121eaf.56.1791307230612;
+        Tue, 06 Oct 2026 10:20:30 -0700 (PDT)
+ARC-Seal: i=2; a=rsa-sha256; t=1791307230; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=Qt8qV5pIqPt+wnvvUcNsad2o8Bs1zp6vke3o9XHqDlIdJNBb5EhtH2bvCRdvhYKs7m
+         DkR7y+fnzvCTcg5SmXI3GEJkrmbZbQMYEk864aS+yprinnRYhh6OLHO4hMWSR+Mc4WVr
+         gX+zRW2rQbmLyABvcMedKpUm73pZ0LgdgWwLYB6XSL6U4X/HvpzCjDZt8RaOUeLG8xaQ
+         aoSfM9KIBM8jEXnSGg2QHexxLnldJ1pE7O0awVaCZsfQroZKt1RRDPGYdLL8r/74+BsK
+         vCPJ+Dsxy/aAi8s7W4VRPQ04zmR+oHRsOZ0CZH9nvQ+wmhOj60P+YO5eaF6fFsAy8KQQ
+         NzWg==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=gfHAWwDB+Y0cu6n9LPgOXqa4FIrb5emhveRVFtT3YBc=;
+        fh=Ms7od+Oet0kXFDKV78TdmZULzaExRtfFRoDzvCN6CtI=;
+        b=NtziNQDEug6EVtbd4OIvOLdMh5SOEl/dLJ1buznIuxQAFiqgQIdJPFIAYmItoydqOL
+         gtGnhWI+0ZxdCduTGiOf9WshceswYDNpgjYkVu9Emn8koRp2JAU2bts1dTKXKopQAeUV
+         JyOB0FCrSQnAyBHR327HJ8zmx2Gsw3+jr/SDsuVHzh1v7qBlY5rjLQXqJZAw/x3yJhyI
+         vrFYBVHMXTpe4iGd6LXmr5usDnEJX0EZvF7g2sDdJQKx07/idK7Db7Sp4QVxiCjhj9cl
+         YcPYhX1vTFAWbuH6RRyYDyhgZOK2rQxy7dKCXw7c/Dclzf9DgcHngeWSwQ3xJDV6xUaQ
+         Njpw==;
+        dara=google.com
+ARC-Authentication-Results: i=2; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b="D2N/A3sL";
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 586e51a60fabf-49e16e1540dsor9525595fac.3.2026.10.06.10.20.30
+        for <mediateam@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 06 Oct 2026 10:20:30 -0700 (PDT)
+Received-SPF: pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+ARC-Seal: i=1; a=rsa-sha256; t=1791307230; cv=none;
+        d=google.com; s=arc-20260327;
+        b=S8YuZPuCZ95qrYIdzqUNmrodS4cgIb/hKP3GyrR7jYVmSK9gO90xDcjkFW2ZGZ1J3+
+         plzEoIsTcn/ntjXXWu3g/GXTPJxTsBKqz1QEgY7JBhRxf1p/6V6v2nzgXZIeeHCt8H/e
+         mon5UNWmCqmQmrS7fTiC+MwPE4u+SjD/90S8NYg4SBI4t82xvNqOVRMBr6kxmiVK9DXm
+         zNLOVDz/LwnFNAlldCCygID1VS3UZRjK6UjAmK0sT5HhiMq+wivgGvssDfiXA2AiI1BG
+         Su8fMioRhFtKY8gIyGzzZYy8ID4Urp0C+uqV2KmaE1TQmwtZYiK153hgnAHQ110M40Fk
+         n3rQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=gfHAWwDB+Y0cu6n9LPgOXqa4FIrb5emhveRVFtT3YBc=;
+        fh=Ms7od+Oet0kXFDKV78TdmZULzaExRtfFRoDzvCN6CtI=;
+        b=qK7BHXoR6ft9fLzzsy3SHOfpk+NLUChSaVzI0s+UMwmzeF3Sqs/d027eNGUbyZ7i5Q
+         Rb5nrRs9kWJ3Fv1olKkMEX6aBg9tx6COEsQyiJs2+nKuwCXxkL0Nm0BaxD7jxHA2BoW5
+         ssS4aeQgvCoZpLTjDo426gQTt9i/RuEG2bcT6MbLUHrDlACigL3mbS3syNwFtwoijts9
+         inLdeMERmKpvOfESajZ/MzBqlULMdKD4xyFc8Ij5ajAfkbGN1wbugCvTfeSOZD9QOrOs
+         wVLwByxsDQ4RxW/y26mWfsQ9Q7S1HdH0JKeT6Hf4x3giSrPFny4ZNJKt2CjSfywrzY1C
+         JUXg==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+X-Forwarded-Encrypted: i=1; AKwUvBwx9pEqeUPx8Kxjtuo7mR+qLzmONSyG/Db0DfPNHoaZIS71BidOayQV+qXSqpV6z5d6iGOLal4QZV8=@cityharvestalbany.com
+X-Gm-Gg: AYBFou0UfU2rLP+Ms9zU5TXU1V3olHwYvUIe8idJ7hoQW57NGtjwyo2tQAcCxjDBkx2
+	lqRGIdFWhdWYblcwIsKYQEDozKrmJYOmAkdbd36VIBJ9F6VE9Nwqf3bv6iRbtzQrp+F68QK1k4d
+	fyRQ3vB5TbciBXWnADNjMu2X/yJYtRpgVAjN8genUnKwqzJn0Ap95Vqjs1lYFwqFlfMFCdsXvt1
+	DJeUO0Z5QL3cQNKB5+1N+Go0yM0X8k8nAm4lW5T96mPalw6PFRwoBjYiaJYMQY4BmTjg+ISEnBR
+	YXZu3rOOFnd3/dNgHta9upgnDspHPKZvySZX29krOYAfUlHCGho=
+X-Received: by 2002:a05:6871:e80c:b0:485:d31b:775c with SMTP id
+ 586e51a60fabf-4a240486caamr2044047fac.26.1791307229930; Tue, 06 Oct 2026
+ 10:20:29 -0700 (PDT)
+MIME-Version: 1.0
+From: Ernest Fink <ernestfink@gmail.com>
+Date: Tue, 6 Oct 2026 13:20:19 -0400
+X-Gm-Features: AclHuK-45hUfVTuW-_xgZzBPezysHIr7Mu-nSjbZb70Z-DrwiLKatQwL_FoEIcU
+Message-ID: <CAPJYNcKv6G-btrvKR5wa7uo07EZ+90PW33+4YLgs9hy9qMVgng@mail.gmail.com>
+Subject: [CHFC Media] UPDATE OVER HEAD TONIGHT
+To: Dan Horning <dsoundmn@gmail.com>, mediateam@cityharvestalbany.com
+Content-Type: multipart/alternative; boundary="0000000000001faa8c065d2f3708"
+X-Original-Sender: ernestfink@gmail.com
+X-Original-Authentication-Results: mx.google.com;       dkim=pass
+ header.i=@gmail.com header.s=20251104 header.b="D2N/A3sL";       arc=pass
+ (i=1);       spf=pass (google.com: domain of ernestfink@gmail.com designates
+ 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Reply-To: mediateam@cityharvestalbany.com
+Precedence: list
+Mailing-list: list mediateam@cityharvestalbany.com; contact mediateam+owners@cityharvestalbany.com
+List-ID: <mediateam.cityharvestalbany.com>
+X-Spam-Checked-In-Group: mediateam@cityharvestalbany.com
+X-Google-Group-Id: 414320174969
+List-Post: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/post>,
+ <mailto:mediateam@cityharvestalbany.com>
+List-Help: <https://support.google.com/a/cityharvestalbany.com/bin/topic.py?topic=25838>,
+ <mailto:mediateam+help@cityharvestalbany.com>
+List-Archive: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/>
+List-Unsubscribe: <mailto:googlegroups-manage+414320174969+unsubscribe@googlegroups.com>,
+ <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/subscribe>
+
+--0000000000001faa8c065d2f3708
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+*ASK If You Lack Wisdom*
+
+*I Kings 3:5-14 NKJV*
+At Gibeon the Lord appeared to Solomon in a dream by night; and God said,
+=E2=80=9CAsk! What shall I give you?=E2=80=9D 6  And Solomon said: =E2=80=
+=9CYou have shown
+great mercy to Your servant David my father, because he walked before You
+in truth, in righteousness, and in uprightness of heart with You; You
+have continued this great kindness for him, and You have given him a son to
+sit on his throne, as it is this day. 7  Now, O Lord my God, You have
+made Your servant king instead of my father David, but I am a little child;
+I do not know how to go out or come in. 8  And Your servant is in the midst
+of Your people whom You have chosen, a great people, too numerous to
+be numbered or counted. 9  Therefore give to Your servant an [b]
+understanding heart to judge Your people, that I may discern between good
+and evil. For who is able to judge this great people of Yours?=E2=80=9D 10 =
+ The
+speech pleased the Lord, that Solomon had asked this thing. 11  Then God
+said to him: =E2=80=9CBecause you have asked this thing, and have not asked=
+ long
+life for yourself, nor have asked riches for yourself, nor have asked the
+life of your enemies, but have asked for yourself understanding to discern
+justice, 12  behold, I have done according to your words; see, I have given
+you Wisdom and understanding heart, so that there has not been anyone like
+you before you, nor shall any like you arise after you. 13  And I have also
+given you what you have not asked: both riches and honor, so that there
+shall not be anyone like you among the kings all your days. 14  So if you
+walk in My ways, to keep My statutes and My commandments, as your father
+David walked, then I will lengthen your days.=E2=80=9D
+
+
+*James 1:5-9 King James Version*
+If any of you lack wisdom, let him ask of God, that gives to all men
+liberally, and upbraids not; and it shall be given him. 6  But let him ask
+in faith, nothing wavering. For he that wavers is like a wave of the sea
+driven with the wind and tossed. 7  For let not that man think that he
+shall receive any thing of the Lord. 8  A double minded man is unstable in
+all his ways. 9  Let the brother of low degree rejoice in that he is
+exalted:
+
+*Three Keys to Receiving God=E2=80=99s Wisdom*
+
+
+*1. Acknowledge You Lack Wisdom*
+
+*2. You have to ASK*
+*James 1:5 *
+If any of you lack Wisdom, let him ASK of God.
+
+*Hebrews 4:16 KJV
+
+                                                               *Let us
+therefore come boldly unto the throne of grace, that we may obtain mercy,
+and find grace to help in time of need.
+
+*3. Let Him ASK in Faith*
+
+*James 1:6*
+But let him ask in Faith, nothing wavering.
+
+*James 1:7*
+
+For let not that man think that he shall receive ANY thing of the Lord
+
+
+--0000000000001faa8c065d2f3708
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div class=3D"gmail_default" style=3D"font-size:large"><di=
+v class=3D"gmail_default"><div style=3D"text-align:center"><b style=3D"back=
+ground-color:transparent">ASK If You Lack Wisdom</b></div><br><b>I Kings 3:=
+5-14 NKJV</b><br>At Gibeon the Lord appeared to Solomon in a dream by night=
+; and God=C2=A0said, =E2=80=9CAsk! What shall I give you?=E2=80=9D 6=C2=A0 =
+And Solomon said: =E2=80=9CYou have shown<br>great mercy to Your servant Da=
+vid my father, because he walked before=C2=A0You in truth, in righteousness=
+, and in uprightness of heart with You; You<br>have continued this great ki=
+ndness for him, and You have given him a son=C2=A0to sit on his throne, as =
+it is this day. 7=C2=A0 Now, O Lord my God, You have made=C2=A0Your servant=
+ king instead of my father David, but I am a little child; I do not=C2=A0kn=
+ow how to go out or come in. 8=C2=A0 And Your servant is in the midst of Yo=
+ur=C2=A0people whom You have chosen, a great people, too numerous to be=C2=
+=A0numbered or counted. 9=C2=A0 Therefore give to Your servant an [b] under=
+standing=C2=A0heart to judge Your people, that I may discern between good a=
+nd evil. For=C2=A0who is able to judge this great people of Yours?=E2=80=9D=
+ 10=C2=A0 The speech pleased the=C2=A0Lord, that Solomon had asked this thi=
+ng. 11=C2=A0 Then God said to him: =E2=80=9CBecause=C2=A0you have asked thi=
+s thing, and have not asked long life for yourself, nor=C2=A0have asked ric=
+hes for yourself, nor have asked the life of your enemies, but=C2=A0have as=
+ked for yourself understanding to discern justice, 12=C2=A0 behold, I have=
+=C2=A0done according to your words; see, I have given you Wisdom and=C2=A0u=
+nderstanding heart, so that there has not been anyone like you before=C2=A0=
+you, nor shall any like you arise after you. 13=C2=A0 And I have also given=
+ you what=C2=A0you have not asked: both riches and honor, so that there sha=
+ll not be=C2=A0anyone like you among the kings all your days. 14=C2=A0 So i=
+f you walk in My ways,=C2=A0to keep My statutes and My commandments, as you=
+r father David walked,=C2=A0then I will lengthen your days.=E2=80=9D<br><br=
+><br><b>James 1:5-9 King James Version</b><br>If any of you lack wisdom, le=
+t him ask of God, that gives to all men liberally,=C2=A0and upbraids not; a=
+nd it shall be given him. 6=C2=A0 But let him ask in faith, nothing=C2=A0wa=
+vering. For he that wavers is like a wave of the sea driven with the wind=
+=C2=A0and tossed. 7=C2=A0 For let not that man think that he shall receive =
+any thing of the=C2=A0Lord. 8=C2=A0 A double minded man is unstable in all =
+his ways. 9=C2=A0 Let the brother of=C2=A0low degree rejoice in that he is =
+exalted:=C2=A0<br><br><b>Three Keys to Receiving God=E2=80=99s Wisdom</b></=
+div><div class=3D"gmail_default"><b><br>1. Acknowledge You Lack Wisdom<br><=
+/b><br><b>2. You have to ASK<br></b><br></div><div class=3D"gmail_default">=
+<b>James 1:5=C2=A0</b><br>If any of you lack Wisdom, let him ASK of God.</d=
+iv><div class=3D"gmail_default"><br></div><div class=3D"gmail_default"><p c=
+lass=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-size:1=
+2pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-hei=
+ght:115%;font-family:Arial,sans-serif">Hebrews 4:16 KJV=C2=A0 =C2=A0 =C2=A0=
+ =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0</span></b><span style=3D"font-size:14pt;line-height:115%;font-fa=
+mily:Arial,sans-serif">Let us
+therefore come boldly unto the throne of grace, that we may obtain mercy, a=
+nd
+find grace to help in time of need.</span></p><br><b>3. Let Him ASK in Fait=
+h</b></div><div class=3D"gmail_default"><b><br>James 1:6</b><br>But let him=
+ ask in Faith, nothing wavering.</div><div class=3D"gmail_default"><br></di=
+v><div class=3D"gmail_default"><p class=3D"MsoNormal" style=3D"margin:0in;l=
+ine-height:115%;font-size:12pt;font-family:Aptos,sans-serif"><b><span style=
+=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-serif">James 1:7=
+</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">For let not that man think
+that he shall receive ANY thing of the Lord</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p></div></div></div>
+
+
+--0000000000001faa8c065d2f3708--

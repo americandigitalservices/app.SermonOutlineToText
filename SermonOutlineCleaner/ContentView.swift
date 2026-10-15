@@ -16,7 +16,7 @@ struct ContentView: View {
 
     @State private var lineCount: Int = 0
     @State private var scriptureCount: Int = 0
-    @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pdf, .eml, .txt) or click Select Outline"
+    @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pptx, .pdf, .eml, .txt) or click Select Outline"
     @State private var isTargeted: Bool = false
 
     // Computed property for UI display
@@ -141,7 +141,7 @@ struct ContentView: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .lineLimit(1)
-                        Text("Supports Word (.docx), PDF (.pdf), Apple Mail (.eml), and Text (.txt)")
+                        Text("Supports Word (.docx), PowerPoint (.pptx), PDF (.pdf), Apple Mail (.eml), and Text (.txt)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -167,7 +167,6 @@ struct ContentView: View {
             // 3. 2x2 Mini Previews of Latest Created Files
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
-                    // Bound directly to $speakerName so top bar and preview card are always identical
                     PreviewCard(
                         title: "MainSpeaker.txt",
                         badge: "1 line",
@@ -249,7 +248,6 @@ struct ContentView: View {
     }
 
     private func openFilePicker() {
-        // Force any active TextField (like Speaker Name) to commit its typed text before opening file dialog
         commitActiveTextFields()
 
         let panel = NSOpenPanel()
@@ -260,7 +258,10 @@ struct ContentView: View {
             .pdf,
             .plainText,
             .emailMessage,
+            .presentation,
             UTType(filenameExtension: "docx") ?? .data,
+            UTType(filenameExtension: "pptx") ?? .data,
+            UTType(filenameExtension: "ppt") ?? .data,
             UTType(filenameExtension: "eml") ?? .data
         ]
 
@@ -303,7 +304,6 @@ struct ContentView: View {
                 maxLineChars: maxLineChars
             )
 
-            // Only let .eml From: header overwrite the user's typed speaker if "Use .eml Sender" is checked
             let resolvedSpeaker = preferEmlSender ? result.speaker : activeFallback
 
             speakerName = resolvedSpeaker
@@ -436,7 +436,6 @@ struct ContentView: View {
             return
         }
 
-        // Ensure the latest edits/filename are written right before importing
         let targetFilename = (try? writeFilesToDisk(
             speaker: speakerName,
             title: previewTitle,
@@ -530,7 +529,7 @@ struct PreviewCard: View {
     let title: String
     let badge: String
     @Binding var text: String
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
