@@ -7,9 +7,9 @@ struct ContentView: View {
     @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = (NSHomeDirectory() as NSString).appendingPathComponent("Desktop")
     @AppStorage("speakerName") private var speakerName: String = SermonCleanerEngine.defaultSpeaker
     @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
+    @AppStorage("preferEmlSender") private var preferEmlSender: Bool = false
 
     @State private var currentFileURL: URL? = nil
-    @State private var previewSpeaker: String = ""
     @State private var previewTitle: String = ""
     @State private var previewText: String = ""
     @State private var previewScriptures: String = ""
@@ -19,14 +19,19 @@ struct ContentView: View {
     @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pdf, .eml, .txt) or click Select Outline"
     @State private var isTargeted: Bool = false
 
-    private var sermonTextFilename: String {
+    // Computed property for UI display
+    private var currentSermonTextFilename: String {
+        sermonTextFilename(title: previewTitle, speaker: speakerName)
+    }
+
+    // Explicit helper so writeFilesToDisk() never reads stale state
+    private func sermonTextFilename(title: String, speaker: String) -> String {
         let safeTitle = sanitizeFilenameComponent(
-            previewTitle.isEmpty ? "Untitled" : previewTitle,
+            title.isEmpty ? "Untitled" : title,
             maxLength: 45
         )
-        let rawSpeaker = previewSpeaker.isEmpty ? speakerName : previewSpeaker
         let safeSpeaker = sanitizeFilenameComponent(
-            rawSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : rawSpeaker,
+            speaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : speaker,
             maxLength: 30
         )
         return "SermonText-\(safeTitle)-\(safeSpeaker).txt"
@@ -39,11 +44,10 @@ struct ContentView: View {
             .joined(separator: "-")
             .replacingOccurrences(of: "[\\s\\-]+", with: "-", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        
+
         guard !cleaned.isEmpty else { return "Untitled" }
         guard cleaned.count > maxLength else { return cleaned }
-        
-        // Truncate cleanly on word/dash boundaries if possible
+
         let words = cleaned.components(separatedBy: "-")
         var truncated = ""
         for word in words {
@@ -54,12 +58,11 @@ struct ContentView: View {
                 break
             }
         }
-        
-        // Fallback if a single continuous string exceeds maxLength
+
         if truncated.isEmpty {
             truncated = String(cleaned.prefix(maxLength)).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
         }
-        
+
         return truncated.isEmpty ? "Untitled" : truncated
     }
 
@@ -86,6 +89,11 @@ struct ContentView: View {
                             TextField("Pastor Ernest Fink", text: $speakerName)
                                 .textFieldStyle(.roundedBorder)
                                 .onSubmit(saveManualEditsToDisk)
+
+                            Toggle("Use .eml Sender", isOn: $preferEmlSender)
+                                .toggleStyle(.checkbox)
+                                .font(.caption)
+                                .help("When checked, emails (.eml) will overwrite the Speaker Name with the email's From: sender.")
 
                             Divider().frame(height: 18)
 
@@ -159,10 +167,11 @@ struct ContentView: View {
             // 3. 2x2 Mini Previews of Latest Created Files
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
+                    // Bound directly to $speakerName so top bar and preview card are always identical
                     PreviewCard(
                         title: "MainSpeaker.txt",
                         badge: "1 line",
-                        text: $previewSpeaker
+                        text: $speakerName
                     )
                     PreviewCard(
                         title: "SermonTitle.txt",
@@ -174,7 +183,7 @@ struct ContentView: View {
 
                 HStack(spacing: 12) {
                     PreviewCard(
-                        title: sermonTextFilename,
+                        title: currentSermonTextFilename,
                         badge: "\(lineCount) lines • max \(maxLineChars) ch",
                         text: $previewText
                     )
@@ -216,22 +225,16 @@ struct ContentView: View {
         .onOpenURL { url in
             processFile(url)
         }
-        .onChange(of: speakerName) { _, newValue in
-            if previewSpeaker != newValue {
-                previewSpeaker = newValue
-            }
-        }
-        .onChange(of: previewSpeaker) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if speakerName != trimmed {
-                speakerName = trimmed
-            }
-        }
     }
 
     // MARK: - Actions
 
+    private func commitActiveTextFields() {
+        NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
     private func selectOutputDirectory() {
+        commitActiveTextFields()
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -246,6 +249,9 @@ struct ContentView: View {
     }
 
     private func openFilePicker() {
+        // Force any active TextField (like Speaker Name) to commit its typed text before opening file dialog
+        commitActiveTextFields()
+
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
@@ -264,6 +270,7 @@ struct ContentView: View {
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        commitActiveTextFields()
         guard let provider = providers.first else { return false }
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
             guard let data = item as? Data,
@@ -276,6 +283,7 @@ struct ContentView: View {
     }
 
     private func reprocessIfLoaded() {
+        commitActiveTextFields()
         if let url = currentFileURL {
             processFile(url)
         }
@@ -283,15 +291,22 @@ struct ContentView: View {
 
     private func processFile(_ fileURL: URL) {
         do {
+            commitActiveTextFields()
             currentFileURL = fileURL
+
+            let currentTypedSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let activeFallback = currentTypedSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : currentTypedSpeaker
+
             let result = try SermonCleanerEngine.processSermonFile(
                 url: fileURL,
-                fallbackSpeaker: speakerName,
+                fallbackSpeaker: activeFallback,
                 maxLineChars: maxLineChars
             )
 
-            speakerName = result.speaker
-            previewSpeaker = result.speaker
+            // Only let .eml From: header overwrite the user's typed speaker if "Use .eml Sender" is checked
+            let resolvedSpeaker = preferEmlSender ? result.speaker : activeFallback
+
+            speakerName = resolvedSpeaker
             previewTitle = result.title
             previewText = result.lines.joined(separator: "\n")
             previewScriptures = result.scriptures.joined(separator: "\n")
@@ -299,38 +314,61 @@ struct ContentView: View {
             lineCount = result.lines.count
             scriptureCount = result.scriptures.count
 
-            try writeFilesToDisk()
-            statusMessage = "✓ Saved \(sermonTextFilename) to \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
+            let savedFilename = try writeFilesToDisk(
+                speaker: resolvedSpeaker,
+                title: result.title,
+                textBody: previewText,
+                scripturesBody: previewScriptures
+            )
+            statusMessage = "✓ Saved \(savedFilename) to \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
         } catch {
             statusMessage = "⚠️ Error: \(error.localizedDescription)"
         }
     }
 
-    private func writeFilesToDisk() throws {
+    @discardableResult
+    private func writeFilesToDisk(
+        speaker: String,
+        title: String,
+        textBody: String,
+        scripturesBody: String
+    ) throws -> String {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
         try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
-        try previewSpeaker.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanSpeaker = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let targetFilename = sermonTextFilename(title: cleanTitle, speaker: cleanSpeaker)
+
+        try cleanSpeaker
             .write(to: outDir.appendingPathComponent("MainSpeaker.txt"), atomically: true, encoding: .utf8)
 
-        try previewTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        try cleanTitle
             .write(to: outDir.appendingPathComponent("SermonTitle.txt"), atomically: true, encoding: .utf8)
 
-        let textBody = previewText.trimmingCharacters(in: .whitespacesAndNewlines)
-        try (textBody.isEmpty ? "" : textBody + "\n")
-            .write(to: outDir.appendingPathComponent(sermonTextFilename), atomically: true, encoding: .utf8)
+        let trimmedText = textBody.trimmingCharacters(in: .whitespacesAndNewlines)
+        try (trimmedText.isEmpty ? "" : trimmedText + "\n")
+            .write(to: outDir.appendingPathComponent(targetFilename), atomically: true, encoding: .utf8)
 
-        let scripBody = previewScriptures.trimmingCharacters(in: .whitespacesAndNewlines)
-        try (scripBody.isEmpty ? "" : scripBody + "\n")
+        let trimmedScrip = scripturesBody.trimmingCharacters(in: .whitespacesAndNewlines)
+        try (trimmedScrip.isEmpty ? "" : trimmedScrip + "\n")
             .write(to: outDir.appendingPathComponent("SermonScriptures.txt"), atomically: true, encoding: .utf8)
+
+        return targetFilename
     }
 
     private func saveManualEditsToDisk() {
+        commitActiveTextFields()
         do {
-            try writeFilesToDisk()
+            let savedFilename = try writeFilesToDisk(
+                speaker: speakerName,
+                title: previewTitle,
+                textBody: previewText,
+                scripturesBody: previewScriptures
+            )
             lineCount = previewText.split(whereSeparator: \.isNewline).count
             scriptureCount = previewScriptures.split(whereSeparator: \.isNewline).count
-            statusMessage = "✓ Updated \(sermonTextFilename) in \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
+            statusMessage = "✓ Updated \(savedFilename) in \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
         } catch {
             statusMessage = "⚠️ Failed to write files: \(error.localizedDescription)"
         }
@@ -339,15 +377,14 @@ struct ContentView: View {
     private func loadExistingPreviewsFromDisk() {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
         if let spk = try? String(contentsOf: outDir.appendingPathComponent("MainSpeaker.txt"), encoding: .utf8) {
-            previewSpeaker = spk.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !previewSpeaker.isEmpty { speakerName = previewSpeaker }
+            let trimmed = spk.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { speakerName = trimmed }
         }
         if let ttl = try? String(contentsOf: outDir.appendingPathComponent("SermonTitle.txt"), encoding: .utf8) {
             previewTitle = ttl.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        // Load matching "Sermon Text -TITLE-Speaker.txt", or fallback to the most recent "Sermon Text -*.txt"
-        let expectedTextURL = outDir.appendingPathComponent(sermonTextFilename)
+        let expectedTextURL = outDir.appendingPathComponent(currentSermonTextFilename)
         if let txt = try? String(contentsOf: expectedTextURL, encoding: .utf8) {
             previewText = txt.trimmingCharacters(in: .whitespacesAndNewlines)
             lineCount = previewText.isEmpty ? 0 : previewText.components(separatedBy: .newlines).count
@@ -369,7 +406,7 @@ struct ContentView: View {
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles]
         ) else { return nil }
-        
+
         let matching = urls.filter { $0.lastPathComponent.hasPrefix("SermonText-") && $0.pathExtension == "txt" }
         return matching.max { a, b in
             let dateA = (try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
@@ -380,7 +417,7 @@ struct ContentView: View {
 
     private func revealInFinder() {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
-        let sermonTextURL = outDir.appendingPathComponent(sermonTextFilename)
+        let sermonTextURL = outDir.appendingPathComponent(currentSermonTextFilename)
         if FileManager.default.fileExists(atPath: sermonTextURL.path) {
             NSWorkspace.shared.activateFileViewerSelecting([sermonTextURL])
         } else if let latestURL = mostRecentSermonTextFile(in: outDir) {
@@ -391,6 +428,7 @@ struct ContentView: View {
     }
 
     private func importToProPresenter() {
+        commitActiveTextFields()
         let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
         let options = [promptKey: true] as CFDictionary
         guard AXIsProcessTrustedWithOptions(options) else {
@@ -398,25 +436,46 @@ struct ContentView: View {
             return
         }
 
-        let sermonFilePath = (saveDirectoryPath as NSString).appendingPathComponent(sermonTextFilename)
+        // Ensure the latest edits/filename are written right before importing
+        let targetFilename = (try? writeFilesToDisk(
+            speaker: speakerName,
+            title: previewTitle,
+            textBody: previewText,
+            scripturesBody: previewScriptures
+        )) ?? currentSermonTextFilename
+
+        let sermonFilePath = (saveDirectoryPath as NSString).appendingPathComponent(targetFilename)
+        statusMessage = "⏳ Launching ProPresenter and waiting for main window…"
+
         let scriptSource = """
-        tell application "ProPresenter" to activate
+        tell application "ProPresenter" to launch
+        
         tell application "System Events"
-            repeat 60 times
+            set isReady to false
+            repeat 90 times
                 if exists process "ProPresenter" then
                     tell process "ProPresenter"
-                        set frontmost to true
                         if (count of windows) > 0 and (exists menu bar item "File" of menu bar 1) then
-                            delay 0.5
+                            set isReady to true
                             exit repeat
                         end if
                     end tell
                 end if
                 delay 0.5
             end repeat
-
+            
+            if not isReady then
+                error "ProPresenter did not finish loading its main window in time."
+            end if
+        end tell
+        
+        delay 0.8
+        tell application "ProPresenter" to activate
+        
+        tell application "System Events"
             tell process "ProPresenter"
                 set frontmost to true
+                delay 0.4
                 try
                     click menu item "File…" of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
                 on error
@@ -442,13 +501,24 @@ struct ContentView: View {
         """
 
         DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.main.async {
+                NSApp.deactivate()
+            }
+
             var errorDict: NSDictionary?
             if let scriptObject = NSAppleScript(source: scriptSource) {
                 scriptObject.executeAndReturnError(&errorDict)
-                if let err = errorDict {
-                    let msg = err[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    if let err = errorDict {
+                        let msg = err[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
                         self.statusMessage = "⚠️ ProPresenter Import Error: \(msg)"
+                    } else {
+                        if let proApp = NSWorkspace.shared.runningApplications.first(where: {
+                            $0.localizedName == "ProPresenter" || ($0.bundleIdentifier?.contains("propresenter") == true)
+                        }) {
+                            proApp.activate(options: [.activateIgnoringOtherApps])
+                        }
+                        self.statusMessage = "✓ Imported \(targetFilename) into ProPresenter"
                     }
                 }
             }
