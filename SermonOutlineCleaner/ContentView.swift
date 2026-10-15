@@ -6,18 +6,18 @@ struct ContentView: View {
     @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = (NSHomeDirectory() as NSString).appendingPathComponent("Desktop")
     @AppStorage("speakerName") private var speakerName: String = SermonCleanerEngine.defaultSpeaker
     @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
-
+    
     @State private var currentFileURL: URL? = nil
     @State private var previewSpeaker: String = ""
     @State private var previewTitle: String = ""
     @State private var previewText: String = ""
     @State private var previewScriptures: String = ""
-
+    
     @State private var lineCount: Int = 0
     @State private var scriptureCount: Int = 0
     @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pdf, .eml, .txt) or click Select Outline"
     @State private var isTargeted: Bool = false
-
+    
     var body: some View {
         VStack(spacing: 14) {
             // 1. Settings Bar: Save Location, Speaker Name & Column Limit
@@ -41,18 +41,18 @@ struct ContentView: View {
                             TextField("Pastor Ernest Fink", text: $speakerName)
                                 .textFieldStyle(.roundedBorder)
                                 .onSubmit(saveManualEditsToDisk)
-
+                            
                             Divider().frame(height: 18)
-
+                            
                             Text("Column Limit:")
                                 .fontWeight(.semibold)
-
+                            
                             TextField("105", value: $maxLineChars, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 52)
                                 .multilineTextAlignment(.center)
                                 .onSubmit(reprocessIfLoaded)
-
+                            
                             Stepper("", value: $maxLineChars, in: 45...250, step: 5)
                                 .labelsHidden()
                                 .onChange(of: maxLineChars) { _, _ in
@@ -65,7 +65,7 @@ struct ContentView: View {
                 }
                 .padding(6)
             }
-
+            
             // 2. Drag & Drop Zone / File Picker
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
@@ -77,12 +77,12 @@ struct ContentView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(isTargeted ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
                     )
-
+                
                 HStack(spacing: 16) {
                     Image(systemName: "doc.badge.gearshape")
                         .font(.system(size: 28))
                         .foregroundStyle(.secondary)
-
+                    
                     VStack(alignment: .leading, spacing: 3) {
                         Text(statusMessage)
                             .font(.subheadline)
@@ -92,14 +92,14 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-
+                    
                     Spacer()
-
+                    
                     if currentFileURL != nil {
                         Button("Re-Wrap (\(maxLineChars) ch)", action: reprocessIfLoaded)
                             .controlSize(.large)
                     }
-
+                    
                     Button("Select Outline…", action: openFilePicker)
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
@@ -110,7 +110,7 @@ struct ContentView: View {
             .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
                 handleDrop(providers: providers)
             }
-
+            
             // 3. 2x2 Mini Previews of Latest Created Files
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
@@ -126,7 +126,7 @@ struct ContentView: View {
                     )
                 }
                 .frame(height: 82)
-
+                
                 HStack(spacing: 12) {
                     PreviewCard(
                         title: "SermonText.txt",
@@ -140,7 +140,7 @@ struct ContentView: View {
                     )
                 }
             }
-
+            
             // 4. Footer Actions
             HStack {
                 Button {
@@ -148,15 +148,15 @@ struct ContentView: View {
                 } label: {
                     Label("Reveal in Finder", systemImage: "folder")
                 }
-
+                
                 Spacer()
-
+                
                 Button {
                     saveManualEditsToDisk()
                 } label: {
                     Label("Sync Preview Edits to Disk", systemImage: "square.and.arrow.down")
                 }
-
+                
                 Button {
                     importToProPresenter()
                 } label: {
@@ -168,10 +168,24 @@ struct ContentView: View {
         .padding(16)
         .frame(minWidth: 760, minHeight: 560)
         .onAppear(perform: loadExistingPreviewsFromDisk)
+        .onOpenURL { url in
+            processFile(url)
+        }
+        .onChange(of: speakerName) { _, newValue in
+            if previewSpeaker != newValue {
+                previewSpeaker = newValue
+            }
+        }
+        .onChange(of: previewSpeaker) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if speakerName != trimmed {
+                speakerName = trimmed
+            }
+        }
     }
-
+    
     // MARK: - Actions
-
+    
     private func selectOutputDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -179,13 +193,13 @@ struct ContentView: View {
         panel.canCreateDirectories = true
         panel.prompt = "Select Save Location"
         panel.directoryURL = URL(fileURLWithPath: saveDirectoryPath)
-
+        
         if panel.runModal() == .OK, let url = panel.url {
             saveDirectoryPath = url.path
             loadExistingPreviewsFromDisk()
         }
     }
-
+    
     private func openFilePicker() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
@@ -198,12 +212,12 @@ struct ContentView: View {
             UTType(filenameExtension: "docx") ?? .data,
             UTType(filenameExtension: "eml") ?? .data
         ]
-
+        
         if panel.runModal() == .OK, let url = panel.url {
             processFile(url)
         }
     }
-
+    
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
@@ -215,13 +229,13 @@ struct ContentView: View {
         }
         return true
     }
-
+    
     private func reprocessIfLoaded() {
         if let url = currentFileURL {
             processFile(url)
         }
     }
-
+    
     private func processFile(_ fileURL: URL) {
         do {
             currentFileURL = fileURL
@@ -230,44 +244,43 @@ struct ContentView: View {
                 fallbackSpeaker: speakerName,
                 maxLineChars: maxLineChars
             )
-
+            
             speakerName = result.speaker
             previewSpeaker = result.speaker
             previewTitle = result.title
             previewText = result.lines.joined(separator: "\n")
             previewScriptures = result.scriptures.joined(separator: "\n")
-
+            
             lineCount = result.lines.count
             scriptureCount = result.scriptures.count
-
+            
             try writeFilesToDisk()
             statusMessage = "✓ Cleaned \(fileURL.lastPathComponent) (\(maxLineChars) ch max) — saved to \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
         } catch {
             statusMessage = "⚠️ Error: \(error.localizedDescription)"
         }
     }
-
+    
     private func writeFilesToDisk() throws {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
         try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
-
+        
         try previewSpeaker.trimmingCharacters(in: .whitespacesAndNewlines)
             .write(to: outDir.appendingPathComponent("MainSpeaker.txt"), atomically: true, encoding: .utf8)
-
+        
         try previewTitle.trimmingCharacters(in: .whitespacesAndNewlines)
             .write(to: outDir.appendingPathComponent("SermonTitle.txt"), atomically: true, encoding: .utf8)
-
+        
         let textBody = previewText.trimmingCharacters(in: .whitespacesAndNewlines)
         try (textBody.isEmpty ? "" : textBody + "\n")
             .write(to: outDir.appendingPathComponent("SermonText.txt"), atomically: true, encoding: .utf8)
-
+        
         let scripBody = previewScriptures.trimmingCharacters(in: .whitespacesAndNewlines)
         try (scripBody.isEmpty ? "" : scripBody + "\n")
             .write(to: outDir.appendingPathComponent("SermonScriptures.txt"), atomically: true, encoding: .utf8)
     }
-
+    
     private func saveManualEditsToDisk() {
-        previewSpeaker = speakerName
         do {
             try writeFilesToDisk()
             lineCount = previewText.split(whereSeparator: \.isNewline).count
@@ -277,7 +290,7 @@ struct ContentView: View {
             statusMessage = "⚠️ Failed to write files: \(error.localizedDescription)"
         }
     }
-
+    
     private func loadExistingPreviewsFromDisk() {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
         if let spk = try? String(contentsOf: outDir.appendingPathComponent("MainSpeaker.txt"), encoding: .utf8) {
@@ -296,7 +309,7 @@ struct ContentView: View {
             scriptureCount = previewScriptures.isEmpty ? 0 : previewScriptures.components(separatedBy: .newlines).count
         }
     }
-
+    
     private func revealInFinder() {
         let sermonTextURL = URL(fileURLWithPath: saveDirectoryPath).appendingPathComponent("SermonText.txt")
         if FileManager.default.fileExists(atPath: sermonTextURL.path) {
@@ -305,34 +318,72 @@ struct ContentView: View {
             NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: saveDirectoryPath)
         }
     }
-
+    
     private func importToProPresenter() {
+        // 1. Check if macOS Accessibility permission is granted; if not, prompt the user
+        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        let options = [promptKey: true] as CFDictionary
+        guard AXIsProcessTrustedWithOptions(options) else {
+            statusMessage = "⚠️ Please enable SermonOutlineCleaner in System Settings > Privacy & Security > Accessibility, then click Import again."
+            return
+        }
+        
         let sermonFilePath = (saveDirectoryPath as NSString).appendingPathComponent("SermonText.txt")
         let scriptSource = """
-        tell application "ProPresenter" to activate
-        delay 0.6
-        tell application "System Events"
-            tell process "ProPresenter"
-                set frontmost to true
-                keystroke "i" using {shift down, command down}
-                delay 0.8
-                keystroke "g" using {shift down, command down}
-                delay 0.6
-                set the clipboard to "\(sermonFilePath)"
-                keystroke "v" using {command down}
-                delay 0.4
-                key code 36
-                delay 0.5
-                key code 36
-                delay 0.9
-                key code 36
-            end tell
+            tell application "ProPresenter" to activate
+            tell application "System Events"
+                repeat 60 times
+                    if exists process "ProPresenter" then
+                        tell process "ProPresenter"
+                            set frontmost to true
+                            if (count of windows) > 0 and (exists menu bar item "File" of menu bar 1) then
+                                delay 0.5
+                                exit repeat
+                            end if
+                        end tell
+                    end if
+                    delay 0.5
+                end repeat
+            
+                tell process "ProPresenter"
+                    set frontmost to true
+                    try
+                        click menu item "File…" of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
+                    on error
+                        try
+                            click menu item "File..." of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
+                        on error
+                            keystroke "i" using {shift down, command down}
+                        end try
+                    end try
+                    delay 0.8
+                    keystroke "g" using {shift down, command down}
+                    delay 0.6
+                    set the clipboard to "\(sermonFilePath)"
+                    keystroke "v" using {command down}
+                    delay 0.4
+                    key code 36
+                    delay 0.5
+                    key code 36
+                    delay 0.9
+                    key code 36
                 end tell
-        """
-        let task = Process()
-        task.launchPath = "/usr/bin/osascript"
-        task.arguments = ["-e", scriptSource]
-        try? task.run()
+            end tell
+            """
+        
+        // 2. Run on a background thread using native NSAppleScript
+        DispatchQueue.global(qos: .userInitiated).async {
+            var errorDict: NSDictionary?
+            if let scriptObject = NSAppleScript(source: scriptSource) {
+                scriptObject.executeAndReturnError(&errorDict)
+                if let err = errorDict {
+                    let msg = err[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
+                    DispatchQueue.main.async {
+                        self.statusMessage = "⚠️ ProPresenter Import Error: \(msg)"
+                    }
+                }
+            }
+        }
     }
 }
 

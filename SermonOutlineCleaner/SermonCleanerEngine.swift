@@ -303,6 +303,42 @@ final class SermonCleanerEngine {
         return mergeOrphanVerseNumberLines(rawLines)
     }
 
+    static func decodeQuotedPrintable(_ input: String) -> String {
+        let softStripped = input
+            .replacingOccurrences(of: "=\r\n", with: "")
+            .replacingOccurrences(of: "=\n", with: "")
+        var bytes: [UInt8] = []
+        let utf8 = Array(softStripped.utf8)
+        var i = 0
+        while i < utf8.count {
+            if utf8[i] == UInt8(ascii: "="), i + 2 < utf8.count,
+               let h1 = Character(UnicodeScalar(utf8[i + 1])).hexDigitValue,
+               let h2 = Character(UnicodeScalar(utf8[i + 2])).hexDigitValue {
+                bytes.append(UInt8(h1 * 16 + h2))
+                i += 3
+            } else {
+                bytes.append(utf8[i])
+                i += 1
+            }
+        }
+        return String(decoding: bytes, as: UTF8.self)
+    }
+
+    static func decodeMimePartBody(_ part: String) -> String {
+        let subParts = part.components(separatedBy: "\n\n")
+        let partHeader = subParts.first?.lowercased() ?? ""
+        let rawPayload = subParts.dropFirst().joined(separator: "\n\n")
+
+        if partHeader.contains("content-transfer-encoding: base64") {
+            let cleanedBase64 = rawPayload.components(separatedBy: .whitespacesAndNewlines).joined()
+            if let data = Data(base64Encoded: cleanedBase64),
+               let decoded = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) {
+                return decoded
+            }
+        }
+        return decodeQuotedPrintable(rawPayload)
+    }
+
     static func extractLinesFromEml(_ url: URL) throws -> [String] {
         let rawText = (try? String(contentsOf: url, encoding: .utf8))
             ?? (try? String(contentsOf: url, encoding: .isoLatin1))
@@ -310,7 +346,7 @@ final class SermonCleanerEngine {
         let normalized = rawText.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         let parts = normalized.components(separatedBy: "\n\n")
         let headerBlock = parts.first ?? ""
-        let bodyBlock = parts.dropFirst().joined(separator: "\n\n")
+        var bodyBlock = parts.dropFirst().joined(separator: "\n\n")
 
         var extracted: [String] = []
         for line in headerBlock.components(separatedBy: "\n") {
@@ -325,11 +361,22 @@ final class SermonCleanerEngine {
             }
         }
 
-        let cleanBody = bodyBlock
-            .replacingOccurrences(of: "=\n", with: "")
-            .replacingOccurrences(of: "=20\n", with: "\n")
+        var cleanBody = ""
+        if let boundaryMatch = regexFirstMatch(headerBlock, pattern: "boundary=\"?([^\"\\s;]+)\"?") {
+            let boundary = "--" + boundaryMatch[1]
+            let mimeParts = bodyBlock.components(separatedBy: boundary)
+            if let plainPart = mimeParts.first(where: { $0.lowercased().contains("content-type: text/plain") }) {
+                cleanBody = decodeMimePartBody(plainPart)
+            } else if let htmlPart = mimeParts.first(where: { $0.lowercased().contains("content-type: text/html") }) {
+                cleanBody = decodeMimePartBody(htmlPart)
+            } else {
+                cleanBody = decodeQuotedPrintable(bodyBlock)
+            }
+        } else {
+            cleanBody = decodeMimePartBody(normalized)
+        }
 
-        if cleanBody.contains("<html") || cleanBody.contains("<div") || cleanBody.contains("<p") {
+        if cleanBody.lowercased().contains("<html") || cleanBody.lowercased().contains("<div") || cleanBody.lowercased().contains("<p") {
             if let data = cleanBody.data(using: .utf8),
                let attr = try? NSAttributedString(
                    data: data,
@@ -751,7 +798,7 @@ final class SermonCleanerEngine {
                 }
             }
 
-            // Split inline parenthetical references into sub-lines (from clean_sermon.py)
+            // Split inline parenthetical references into sub-lines
             let subLines = splitInlineParenRefs(line)
 
             for sub in subLines {
@@ -794,7 +841,7 @@ final class SermonCleanerEngine {
                     }
                 }
 
-                // 3. Topic / commentary line + multi_ref_match & inline_cite (restored from clean_sermon.py)
+                // 3. Topic / commentary line + multi_ref_match & inline_cite
                 let formattedTopic = standardizeRefsInText(formatTopicLine(sub))
 
                 let multiRefMatch = regexFirstMatch(
