@@ -10,11 +10,22 @@ struct SermonProcessingResult {
     var scriptures: [String]
 }
 
+struct EmlAttachment {
+    let filename: String
+    let data: Data
+}
+
+struct EmlInspection {
+    let sender: String?
+    let subject: String?
+    let attachments: [EmlAttachment]
+}
+
 final class SermonCleanerEngine {
     static let defaultMaxLineChars = 105
     static let defaultSpeaker = "Pastor Ernest Fink"
     static let slideBreakMarker = "__SLIDE_BREAK__"
-    
+
     static let danglingEndWords: Set<String> = [
         "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "with", "from",
         "into", "unto", "upon", "about", "as", "is", "are", "was", "were", "be",
@@ -22,7 +33,7 @@ final class SermonCleanerEngine {
         "which", "that", "this", "these", "those", "his", "her", "their", "our", "your",
         "my", "its", "so", "very", "too", "not", "no", "every", "all", "both", "each"
     ]
-    
+
     static let clauseStarters: Set<String> = [
         "and", "but", "or", "nor", "for", "yet", "so", "because", "since", "although",
         "though", "while", "where", "when", "whenever", "wherever", "whether", "if",
@@ -31,7 +42,7 @@ final class SermonCleanerEngine {
         "looking", "despising", "ignoring", "bringing", "giving", "removing", "exchanging",
         "trading", "soaring", "running", "walking", "symbolizing", "allowing"
     ]
-    
+
     static let bookMap: [String: String] = [
         "genesis": "Genesis", "gen": "Genesis",
         "exodus": "Exodus", "exod": "Exodus", "exo": "Exodus",
@@ -100,7 +111,7 @@ final class SermonCleanerEngine {
         "jude": "Jude", "jud": "Jude",
         "revelation": "Revelation", "revelations": "Revelation", "rev": "Revelation"
     ]
-    
+
     static let translationMap: [String: String] = [
         "amplified bible, classic edition": "AMPC",
         "amplified bible classic edition": "AMPC",
@@ -131,7 +142,7 @@ final class SermonCleanerEngine {
         "new revised standard version": "NRSV",
         "nrsv": "NRSV"
     ]
-    
+
     static let booksRegex: String = {
         let sortedKeys = bookMap.keys.sorted { $0.count > $1.count }
         let patterns = sortedKeys.map { key in
@@ -139,19 +150,19 @@ final class SermonCleanerEngine {
         }
         return "(?:" + patterns.joined(separator: "|") + ")"
     }()
-    
+
     static let translationsRegex: String = {
         let sortedKeys = translationMap.keys.sorted { $0.count > $1.count }
         let patterns = sortedKeys.map { NSRegularExpression.escapedPattern(for: $0) }
         return "(?:" + patterns.joined(separator: "|") + ")"
     }()
-    
+
     static let refCorePattern: String = {
         return "(\(booksRegex))\\.?\\s*(\\d+(?:\\s*:\\s*\\d+)?(?:\\s*-\\s*\\d+)?)(?:\\s*\\(?(\(translationsRegex))\\)?)?"
     }()
-    
+
     // MARK: - Regex Helpers
-    
+
     private static func regexReplace(_ text: String, pattern: String, template: String, caseInsensitive: Bool = false) -> String {
         var opts: NSRegularExpression.Options = []
         if caseInsensitive { opts.insert(.caseInsensitive) }
@@ -159,7 +170,7 @@ final class SermonCleanerEngine {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         return rx.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: template)
     }
-    
+
     private static func regexMatches(_ text: String, pattern: String, caseInsensitive: Bool = true) -> [[String]] {
         var opts: NSRegularExpression.Options = []
         if caseInsensitive { opts.insert(.caseInsensitive) }
@@ -173,11 +184,11 @@ final class SermonCleanerEngine {
             }
         }
     }
-    
+
     private static func regexFirstMatch(_ text: String, pattern: String, caseInsensitive: Bool = true) -> [String]? {
         return regexMatches(text, pattern: pattern, caseInsensitive: caseInsensitive).first
     }
-    
+
     private static func splitInlineParenRefs(_ line: String) -> [String] {
         let pattern = "(?=\\(\(booksRegex)\\.?\\s*\\d+:\\s*\\d+(?:-\\d+)?\\s+\(translationsRegex)\\))"
         let marked = regexReplace(line, pattern: pattern, template: "\u{0000}", caseInsensitive: true)
@@ -186,16 +197,16 @@ final class SermonCleanerEngine {
             .filter { !$0.isEmpty }
         return parts.isEmpty ? [line] : parts
     }
-    
+
     // MARK: - Normalization
-    
+
     static func getCanonicalBook(_ bookRaw: String) -> String {
         let trimmed = bookRaw.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ". "))
         var cleanKey = regexReplace(trimmed, pattern: "[\\s\\-]+", template: " ")
         cleanKey = regexReplace(cleanKey, pattern: "^([1-3])([a-z])", template: "$1 $2")
         return bookMap[cleanKey] ?? bookRaw.capitalized
     }
-    
+
     static func getCanonicalTrans(_ transRaw: String?) -> String? {
         guard let raw = transRaw, !raw.isEmpty else { return nil }
         let cleaned = raw
@@ -205,14 +216,14 @@ final class SermonCleanerEngine {
         let singleSpaced = regexReplace(cleaned, pattern: "\\s+", template: " ")
         return translationMap[singleSpaced] ?? raw.uppercased().trimmingCharacters(in: CharacterSet(charactersIn: "() "))
     }
-    
+
     static func normalizeBookAndNumbers(_ bookRaw: String, _ numbersRaw: String) -> String {
         let canonicalBook = getCanonicalBook(bookRaw)
         var cleanNums = regexReplace(numbersRaw.trimmingCharacters(in: .whitespaces), pattern: "\\s*:\\s*", template: ":")
         cleanNums = regexReplace(cleanNums, pattern: "\\s*-\\s*", template: "-")
         return "\(canonicalBook) \(cleanNums)"
     }
-    
+
     static func formatRefPrefix(_ bookRaw: String, _ numbersRaw: String, _ transRaw: String? = nil) -> String {
         let baseRef = normalizeBookAndNumbers(bookRaw, numbersRaw)
         if let normTrans = getCanonicalTrans(transRaw), !normTrans.isEmpty {
@@ -220,7 +231,7 @@ final class SermonCleanerEngine {
         }
         return baseRef
     }
-    
+
     static func standardizeRefsInText(_ text: String) -> String {
         guard let rx = try? NSRegularExpression(pattern: refCorePattern, options: [.caseInsensitive]) else { return text }
         let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
@@ -236,7 +247,7 @@ final class SermonCleanerEngine {
         }
         return result
     }
-    
+
     static func addScriptureRef(_ list: inout [String], _ refStr: String) {
         let trimmed = refStr.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -249,9 +260,9 @@ final class SermonCleanerEngine {
         }
         list.append(trimmed)
     }
-    
-    // MARK: - File Extraction (.docx, .pptx, .ppt, .pdf, .eml, .txt)
-    
+
+    // MARK: - EML Inspection & Attachment Extraction
+
     static func isEmlFile(_ url: URL) -> Bool {
         let nameLower = url.lastPathComponent.lowercased()
         if nameLower.hasSuffix(".eml") || nameLower.hasSuffix(".eml.txt") { return true }
@@ -264,15 +275,134 @@ final class SermonCleanerEngine {
         }
         return false
     }
-    
+
+    static func inspectEmlFile(_ url: URL) -> EmlInspection {
+        let rawText = (try? String(contentsOf: url, encoding: .utf8))
+            ?? (try? String(contentsOf: url, encoding: .isoLatin1))
+            ?? ""
+        let normalized = rawText.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+        let parts = normalized.components(separatedBy: "\n\n")
+        let rawHeader = parts.first ?? ""
+        let unfoldedHeader = regexReplace(rawHeader, pattern: "\\n[ \\t]+", template: " ")
+
+        var sender: String? = nil
+        var subject: String? = nil
+
+        for line in unfoldedHeader.components(separatedBy: "\n") {
+            let decodedLine = decodeRFC2047Words(line)
+            if let s = cleanEmailSender(decodedLine), !s.isEmpty {
+                sender = s
+            } else if decodedLine.lowercased().hasPrefix("subject:") {
+                let rawSubj = String(decodedLine.dropFirst("subject:".count))
+                let cleaned = cleanEmailSubject(rawSubj)
+                if !cleaned.isEmpty {
+                    subject = cleaned.capitalized
+                }
+            }
+        }
+
+        let attachments = extractSupportedAttachments(from: normalized, headerBlock: unfoldedHeader)
+        return EmlInspection(sender: sender, subject: subject, attachments: attachments)
+    }
+
+    private static func decodeRFC2047Words(_ input: String) -> String {
+        let pattern = "=\\?([^?]+)\\?([BbQq])\\?([^?]+)\\?="
+        guard let rx = try? NSRegularExpression(pattern: pattern, options: []) else { return input }
+        let nsRange = NSRange(input.startIndex..<input.endIndex, in: input)
+        let matches = rx.matches(in: input, options: [], range: nsRange)
+        var result = input
+        for match in matches.reversed() {
+            guard let fullRange = Range(match.range(at: 0), in: result),
+                  let modeRange = Range(match.range(at: 2), in: result),
+                  let payloadRange = Range(match.range(at: 3), in: result) else { continue }
+            let mode = String(result[modeRange]).uppercased()
+            let payload = String(result[payloadRange])
+            var decoded: String? = nil
+            if mode == "B" {
+                if let data = Data(base64Encoded: payload) {
+                    decoded = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
+                }
+            } else if mode == "Q" {
+                let qPrepared = payload.replacingOccurrences(of: "_", with: " ")
+                decoded = decodeQuotedPrintable(qPrepared)
+            }
+            if let dec = decoded {
+                result.replaceSubrange(fullRange, with: dec)
+            }
+        }
+        return result
+    }
+
+    private static func extractSupportedAttachments(from fullNormalizedEml: String, headerBlock: String) -> [EmlAttachment] {
+        let boundaryMatches = regexMatches(fullNormalizedEml, pattern: "boundary=\"?([^\"\\s;]+)\"?")
+        var boundaries: [String] = []
+        for m in boundaryMatches {
+            let b = "--" + m[1]
+            if !boundaries.contains(b) { boundaries.append(b) }
+        }
+        guard !boundaries.isEmpty else { return [] }
+
+        var segments: [String] = [fullNormalizedEml]
+        for b in boundaries {
+            segments = segments.flatMap { $0.components(separatedBy: b) }
+        }
+
+        let supportedExts: Set<String> = ["docx", "pptx", "ppt", "pdf", "txt", "eml"]
+        var attachments: [EmlAttachment] = []
+
+        for seg in segments {
+            let subParts = seg.components(separatedBy: "\n\n")
+            guard subParts.count >= 2 else { continue }
+            let rawPartHeader = subParts[0]
+            let unfoldedPartHeader = decodeRFC2047Words(regexReplace(rawPartHeader, pattern: "\\n[ \\t]+", template: " "))
+
+            let filenameMatch = regexFirstMatch(unfoldedPartHeader, pattern: "(?:filename|name)\\*?=\"?([^\"\\r\\n;]+)\"?")
+            guard var filename = filenameMatch?[1].trimmingCharacters(in: CharacterSet(charactersIn: " \"';")) else {
+                continue
+            }
+            if let utf8PrefixRange = filename.range(of: "UTF-8''", options: .caseInsensitive) {
+                filename = String(filename[utf8PrefixRange.upperBound...])
+            }
+            filename = filename.removingPercentEncoding ?? filename
+
+            let ext = (filename as NSString).pathExtension.lowercased()
+            guard supportedExts.contains(ext) else { continue }
+
+            let payload = subParts.dropFirst().joined(separator: "\n\n")
+            let headerLower = unfoldedPartHeader.lowercased()
+
+            var fileData: Data? = nil
+            if headerLower.contains("content-transfer-encoding: base64") {
+                let cleanedBase64 = payload
+                    .components(separatedBy: .whitespacesAndNewlines)
+                    .filter { !$0.hasPrefix("--") }
+                    .joined()
+                fileData = Data(base64Encoded: cleanedBase64, options: .ignoreUnknownCharacters)
+            } else if headerLower.contains("content-transfer-encoding: quoted-printable") {
+                let decodedStr = decodeQuotedPrintable(payload)
+                fileData = decodedStr.data(using: .utf8)
+            } else {
+                fileData = payload.trimmingCharacters(in: .whitespacesAndNewlines).data(using: .utf8)
+            }
+
+            if let validData = fileData, !validData.isEmpty {
+                attachments.append(EmlAttachment(filename: filename, data: validData))
+            }
+        }
+
+        return attachments
+    }
+
+    // MARK: - File Extraction (.docx, .pptx, .ppt, .pdf, .eml, .txt)
+
     static func extractLines(from url: URL) throws -> [String] {
         if isEmlFile(url) {
             return mergeOrphanVerseNumberLines(try extractLinesFromEml(url))
         }
-        
+
         let ext = url.pathExtension.lowercased()
         var rawLines: [String] = []
-        
+
         if ext == "docx" {
             let attrStr = try NSAttributedString(url: url, options: [:], documentAttributes: nil)
             let normalized = attrStr.string.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
@@ -303,14 +433,13 @@ final class SermonCleanerEngine {
                 if !s.isEmpty { rawLines.append(s) }
             }
         }
-        
+
         return mergeOrphanVerseNumberLines(rawLines)
     }
-    
+
     static func extractLinesFromPowerPoint(_ url: URL) throws -> [String] {
         let ext = url.pathExtension.lowercased()
-        
-        // 1. Modern .pptx (OpenXML ZIP archive: extract slides & speaker notes in numerical order)
+
         if ext == "pptx" {
             let listTask = Process()
             let listPipe = Pipe()
@@ -319,11 +448,11 @@ final class SermonCleanerEngine {
             listTask.standardOutput = listPipe
             try listTask.run()
             listTask.waitUntilExit()
-            
+
             let listData = listPipe.fileHandleForReading.readDataToEndOfFile()
             let entries = (String(data: listData, encoding: .utf8) ?? "")
                 .components(separatedBy: .newlines)
-            
+
             let slideFiles = entries
                 .filter { $0.range(of: "^ppt/slides/slide\\d+\\.xml$", options: .regularExpression) != nil }
                 .sorted { a, b in
@@ -331,29 +460,26 @@ final class SermonCleanerEngine {
                     let numB = Int(b.replacingOccurrences(of: "\\D+", with: "", options: .regularExpression)) ?? 0
                     return numA < numB
                 }
-            
+
             var extracted: [String] = []
             for slidePath in slideFiles {
                 let xmlString = runUnzipPipe(zipURL: url, entryPath: slidePath)
                 extracted.append(contentsOf: parsePowerPointXMLParagraphs(xmlString))
-                
-                // Also check if matching speaker notes exist for this slide
+
                 let slideNum = slidePath.replacingOccurrences(of: "\\D+", with: "", options: .regularExpression)
                 let notePath = "ppt/notesSlides/notesSlide\(slideNum).xml"
                 if entries.contains(notePath) {
                     let noteXML = runUnzipPipe(zipURL: url, entryPath: notePath)
                     extracted.append(contentsOf: parsePowerPointXMLParagraphs(noteXML))
                 }
-                // Insert slide boundary marker so standalone scripture references never bleed across slides
                 extracted.append(slideBreakMarker)
             }
-            
+
             if !extracted.isEmpty {
                 return extracted
             }
         }
-        
-        // 2. Fallback for legacy binary .ppt files (via macOS Spotlight metadata)
+
         if let mdItem = MDItemCreateWithURL(kCFAllocatorDefault, url as CFURL),
            let textContent = MDItemCopyAttribute(mdItem, kMDItemTextContent) as? String {
             let lines = textContent
@@ -362,14 +488,14 @@ final class SermonCleanerEngine {
                 .filter { !$0.isEmpty }
             if !lines.isEmpty { return lines }
         }
-        
+
         throw NSError(
             domain: "SermonCleaner",
             code: 2,
             userInfo: [NSLocalizedDescriptionKey: "Could not extract text from PowerPoint file. If this is an older .ppt file, please re-save it as .pptx."]
         )
     }
-    
+
     private static func runUnzipPipe(zipURL: URL, entryPath: String) -> String {
         let task = Process()
         let pipe = Pipe()
@@ -381,12 +507,12 @@ final class SermonCleanerEngine {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(data: data, encoding: .utf8) ?? ""
     }
-    
+
     private static func parsePowerPointXMLParagraphs(_ xml: String) -> [String] {
         let withLineBreaks = regexReplace(xml, pattern: "<a:br\\s*/?>", template: "\n")
         let paragraphs = regexMatches(withLineBreaks, pattern: "(?s)<a:p\\b[^>]*>(.*?)</a:p>")
         var lines: [String] = []
-        
+
         for para in paragraphs {
             let paraContent = para[1]
             for subSegment in paraContent.components(separatedBy: "\n") {
@@ -400,7 +526,7 @@ final class SermonCleanerEngine {
         }
         return lines
     }
-    
+
     private static func decodeXMLEntities(_ text: String) -> String {
         return text
             .replacingOccurrences(of: "&amp;", with: "&")
@@ -410,7 +536,7 @@ final class SermonCleanerEngine {
             .replacingOccurrences(of: "&apos;", with: "'")
             .replacingOccurrences(of: "&#39;", with: "'")
     }
-    
+
     static func decodeQuotedPrintable(_ input: String) -> String {
         let softStripped = input
             .replacingOccurrences(of: "=\r\n", with: "")
@@ -431,12 +557,12 @@ final class SermonCleanerEngine {
         }
         return String(decoding: bytes, as: UTF8.self)
     }
-    
+
     static func decodeMimePartBody(_ part: String) -> String {
         let subParts = part.components(separatedBy: "\n\n")
         let partHeader = subParts.first?.lowercased() ?? ""
         let rawPayload = subParts.dropFirst().joined(separator: "\n\n")
-        
+
         if partHeader.contains("content-transfer-encoding: base64") {
             let cleanedBase64 = rawPayload.components(separatedBy: .whitespacesAndNewlines).joined()
             if let data = Data(base64Encoded: cleanedBase64),
@@ -446,36 +572,49 @@ final class SermonCleanerEngine {
         }
         return decodeQuotedPrintable(rawPayload)
     }
-    
+
     static func extractLinesFromEml(_ url: URL) throws -> [String] {
         let rawText = (try? String(contentsOf: url, encoding: .utf8))
-        ?? (try? String(contentsOf: url, encoding: .isoLatin1))
-        ?? ""
+            ?? (try? String(contentsOf: url, encoding: .isoLatin1))
+            ?? ""
         let normalized = rawText.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         let parts = normalized.components(separatedBy: "\n\n")
-        let headerBlock = parts.first ?? ""
+        let rawHeader = parts.first ?? ""
+        let headerBlock = regexReplace(rawHeader, pattern: "\\n[ \\t]+", template: " ")
         let bodyBlock = parts.dropFirst().joined(separator: "\n\n")
-        
+
         var extracted: [String] = []
         for line in headerBlock.components(separatedBy: "\n") {
-            if line.lowercased().hasPrefix("from:") {
-                extracted.append(line)
-            } else if line.lowercased().hasPrefix("subject:") {
-                let rawSubj = String(line.dropFirst("subject:".count))
+            let decodedLine = decodeRFC2047Words(line)
+            if decodedLine.lowercased().hasPrefix("from:") {
+                extracted.append(decodedLine)
+            } else if decodedLine.lowercased().hasPrefix("subject:") {
+                let rawSubj = String(decodedLine.dropFirst("subject:".count))
                 let cleaned = cleanEmailSubject(rawSubj)
                 if !cleaned.isEmpty {
                     extracted.append("Subject: \(cleaned)")
                 }
             }
         }
-        
+
+        let boundaryMatches = regexMatches(normalized, pattern: "boundary=\"?([^\"\\s;]+)\"?")
         var cleanBody = ""
-        if let boundaryMatch = regexFirstMatch(headerBlock, pattern: "boundary=\"?([^\"\\s;]+)\"?") {
-            let boundary = "--" + boundaryMatch[1]
-            let mimeParts = bodyBlock.components(separatedBy: boundary)
-            if let plainPart = mimeParts.first(where: { $0.lowercased().contains("content-type: text/plain") }) {
+
+        if !boundaryMatches.isEmpty {
+            var segments: [String] = [bodyBlock]
+            for m in boundaryMatches {
+                let b = "--" + m[1]
+                segments = segments.flatMap { $0.components(separatedBy: b) }
+            }
+
+            let nonAttachmentSegments = segments.filter { seg in
+                let hdr = (seg.components(separatedBy: "\n\n").first ?? "").lowercased()
+                return !hdr.contains("content-disposition: attachment") && !hdr.contains("filename=")
+            }
+
+            if let plainPart = nonAttachmentSegments.first(where: { $0.lowercased().contains("content-type: text/plain") }) {
                 cleanBody = decodeMimePartBody(plainPart)
-            } else if let htmlPart = mimeParts.first(where: { $0.lowercased().contains("content-type: text/html") }) {
+            } else if let htmlPart = nonAttachmentSegments.first(where: { $0.lowercased().contains("content-type: text/html") }) {
                 cleanBody = decodeMimePartBody(htmlPart)
             } else {
                 cleanBody = decodeQuotedPrintable(bodyBlock)
@@ -483,14 +622,14 @@ final class SermonCleanerEngine {
         } else {
             cleanBody = decodeMimePartBody(normalized)
         }
-        
+
         if cleanBody.lowercased().contains("<html") || cleanBody.lowercased().contains("<div") || cleanBody.lowercased().contains("<p") {
             if let data = cleanBody.data(using: .utf8),
                let attr = try? NSAttributedString(
-                data: data,
-                options: [.documentType: NSAttributedString.DocumentType.html,
-                          .characterEncoding: String.Encoding.utf8.rawValue],
-                documentAttributes: nil
+                   data: data,
+                   options: [.documentType: NSAttributedString.DocumentType.html,
+                             .characterEncoding: String.Encoding.utf8.rawValue],
+                   documentAttributes: nil
                ) {
                 for line in attr.string.components(separatedBy: .newlines) {
                     let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -499,30 +638,30 @@ final class SermonCleanerEngine {
                 return extracted
             }
         }
-        
+
         extracted.append(contentsOf: unwrapEmailPlainParagraphs(cleanBody))
         return extracted
     }
-    
+
     static func unwrapEmailPlainParagraphs(_ bodyText: String) -> [String] {
         let paragraphs = regexReplace(bodyText, pattern: "\\n\\s*\\n", template: "\u{0000}").components(separatedBy: "\u{0000}")
         var logicalLines: [String] = []
-        
+
         for para in paragraphs {
             let sublines = para.components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty && !$0.hasPrefix("--") && !$0.hasPrefix("Content-") }
             guard let first = sublines.first else { continue }
-            
+
             var current = first
             for nxt in sublines.dropFirst() {
                 let currClean = current.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
                 let nxtClean = nxt.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
-                
+
                 let currIsRef = regexFirstMatch(currClean, pattern: "^\\(?\(refCorePattern)\\)?$") != nil
                 let nxtIsRef = regexFirstMatch(nxtClean, pattern: "^\\(?\(refCorePattern)\\)?$") != nil
                 let startsWithVerseNum = regexFirstMatch(nxtClean, pattern: "^\\d{1,3}\\s+[A-Z\"“]", caseInsensitive: false) != nil
-                
+
                 if currIsRef || nxtIsRef || startsWithVerseNum {
                     logicalLines.append(current)
                     current = nxt
@@ -534,7 +673,7 @@ final class SermonCleanerEngine {
         }
         return logicalLines
     }
-    
+
     static func cleanEmailSubject(_ subjectRaw: String) -> String {
         var subj = regexReplace(subjectRaw, pattern: "\\s+", template: " ").trimmingCharacters(in: .whitespacesAndNewlines)
         subj = regexReplace(
@@ -543,7 +682,7 @@ final class SermonCleanerEngine {
             template: "",
             caseInsensitive: true
         ).trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         let genericSubjects: Set<String> = [
             "over head outline", "overhead outline", "sermon outline", "sermon notes",
             "outline", "notes", "sunday sermon", "sunday outline", "message outline"
@@ -551,7 +690,7 @@ final class SermonCleanerEngine {
         let check = subj.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " .:-_"))
         return genericSubjects.contains(check) ? "" : subj
     }
-    
+
     static func mergeOrphanVerseNumberLines(_ lines: [String]) -> [String] {
         var merged: [String] = []
         var i = 0
@@ -571,43 +710,33 @@ final class SermonCleanerEngine {
         }
         return merged
     }
-    
+
     // MARK: - Typography, CotEditor Rules & Smart Wrapping
-    
+
     static func cleanBasicTypography(_ input: String) -> String {
         if input == slideBreakMarker { return slideBreakMarker }
         var text = input
-        // 1. CotEditor rule: Strip zero-width spaces, joiners, BOM, and soft hyphens
         text = regexReplace(text, pattern: "[\\u{200B}\\u{200C}\\u{200D}\\u{FEFF}\\u{00AD}]", template: "")
-        // 2. Non-breaking spaces and tabs to normal spaces
         text = text.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\t", with: " ")
-        // 3. Smart quotes to straight quotes
         text = text.replacingOccurrences(of: "“", with: "\"").replacingOccurrences(of: "”", with: "\"")
         text = text.replacingOccurrences(of: "‘", with: "'").replacingOccurrences(of: "’", with: "'")
-        // 4. CotEditor rule: Strip leading bullets, hyphens, dashes, arrows, and list markers at start of line
         text = regexReplace(text, pattern: "^\\h*[•\\-_–—*>»▪~+]+\\h*", template: "")
-        // 5. Remove any remaining asterisks
         text = text.replacingOccurrences(of: "*", with: "")
-        // 6. Strip BibleGateway footnote markers like [a], [b]
         text = regexReplace(text, pattern: "(?<!\\w)\\[[a-zA-Z]\\]\\s*", template: "")
-        // 7. Normalize number ranges with em/en dashes (e.g., 1—3 -> 1-3)
         text = regexReplace(text, pattern: "(?<=\\d)\\s*[—–]\\s*(?=\\d)", template: "-")
-        // 8. Normalize remaining em/en dashes to spaced hyphens ( - )
         text = regexReplace(text, pattern: "\\s*[—–]\\s*", template: " - ")
-        // 9. Fix missing space after sentence-ending punctuation
         text = regexReplace(text, pattern: "(?<!\\.)([.?!;])([A-Z\\[])", template: "$1 $2")
         text = regexReplace(text, pattern: "(?<!\\.)([.?!;])(\\d+\\s+[A-Z\\[\"“])", template: "$1 $2")
         text = regexReplace(text, pattern: "([a-z\\]])([A-Z])", template: "$1 $2")
-        // 10. Collapse multiple horizontal spaces
         text = regexReplace(text, pattern: "\\h{2,}", template: " ")
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     static func cleanVerseBody(_ input: String) -> String {
         var body = regexReplace(input, pattern: "(?<=[.?!;:,\"\\]])\\s+(\\d{1,3})\\s+(?=[A-Z\\[\"“])", template: " ($1) ")
         body = regexReplace(body, pattern: "^\\d{1,3}\\s+(?=[A-Z\\[\"“])", template: "")
         body = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         let quoteCount = body.filter { $0 == "\"" }.count
         if quoteCount == 1 {
             if body.hasSuffix("\"") && !body.hasPrefix("\"") {
@@ -620,10 +749,10 @@ final class SermonCleanerEngine {
         }
         return body
     }
-    
+
     static func formatTopicLine(_ input: String) -> String {
         var text = regexReplace(input, pattern: "[:;]\\h*$", template: "").trimmingCharacters(in: .whitespaces)
-        
+
         if text == text.uppercased() && text.count > 3 {
             text = text.capitalized
         } else if let colonIdx = text.firstIndex(of: ":") {
@@ -635,18 +764,18 @@ final class SermonCleanerEngine {
         }
         return text
     }
-    
+
     static func tokenizePreservingBrackets(_ text: String, maxLen: Int) -> [String] {
         var tokens: [String] = []
         let chars = Array(text)
         let n = chars.count
         let maxAtomicLen = min(45, max(28, Int(Double(maxLen) * 0.52)))
         var i = 0
-        
+
         while i < n {
             while i < n && chars[i].isWhitespace { i += 1 }
             if i >= n { break }
-            
+
             if chars[i] == "(" || chars[i] == "[" {
                 let closeChar: Character = (chars[i] == "(") ? ")" : "]"
                 if let closeIdx = chars[i..<n].firstIndex(of: closeChar) {
@@ -660,7 +789,7 @@ final class SermonCleanerEngine {
                     }
                 }
             }
-            
+
             var endIdx = i
             while endIdx < n && !chars[endIdx].isWhitespace { endIdx += 1 }
             tokens.append(String(chars[i..<endIdx]))
@@ -668,25 +797,25 @@ final class SermonCleanerEngine {
         }
         return tokens
     }
-    
+
     static func scoreSplitPoint(left: String, right: String, maxLen: Int) -> Double {
         var score = 0.0
         let leftLen = left.count
         let rightLen = right.count
-        
+
         let fillRatio = Double(leftLen) / Double(maxLen)
         if fillRatio >= 0.55 {
             score += fillRatio * 25.0
         } else {
             score -= (0.55 - fillRatio) * 60.0
         }
-        
+
         if rightLen <= maxLen && Double(rightLen) < Double(maxLen) * 0.30 {
             score -= 45.0
         } else if rightLen > maxLen && Double(rightLen) < Double(maxLen) * 1.25 {
             score -= 20.0
         }
-        
+
         if [".", "!", "?", ".\"", "!\"", "?\""].contains(where: { left.hasSuffix($0) }) {
             score += 55.0
         } else if [";", ":"].contains(where: { left.hasSuffix($0) }) {
@@ -696,14 +825,14 @@ final class SermonCleanerEngine {
         } else if ["]", ")"].contains(where: { left.hasSuffix($0) }) {
             score += 32.0
         }
-        
+
         let lastWord = regexFirstMatch(left, pattern: "([A-Za-z']+)[^A-Za-z']*$")?[1].lowercased() ?? ""
         let firstWord = regexFirstMatch(right, pattern: "^[^A-Za-z']*([A-Za-z']+)")?[1].lowercased() ?? ""
-        
+
         if danglingEndWords.contains(lastWord) && ![",", ";", ".", "]", ")"].contains(where: { left.hasSuffix($0) }) {
             score -= 45.0
         }
-        
+
         if right.hasPrefix("[") {
             score += 22.0
         } else if right.hasPrefix("(") && fillRatio >= 0.72 {
@@ -725,25 +854,25 @@ final class SermonCleanerEngine {
         }
         return score
     }
-    
+
     static func smartWrapText(_ input: String, maxLen: Int) -> [String] {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty { return [] }
         if text.count <= maxLen { return [text] }
-        
+
         var tokens = tokenizePreservingBrackets(text, maxLen: maxLen)
         var lines: [String] = []
-        
+
         while !tokens.isEmpty {
             let remaining = tokens.joined(separator: " ")
             if remaining.count <= maxLen {
                 lines.append(remaining)
                 break
             }
-            
+
             var bestIdx = 1
             var bestScore = -9999.0
-            
+
             for i in 1..<tokens.count {
                 let left = tokens[..<i].joined(separator: " ")
                 if left.count > maxLen { break }
@@ -754,7 +883,7 @@ final class SermonCleanerEngine {
                     bestIdx = i
                 }
             }
-            
+
             let firstCandidate = tokens[..<bestIdx].joined(separator: " ")
             if firstCandidate.count > maxLen {
                 var rawWords = remaining.split(separator: " ").map(String.init)
@@ -769,20 +898,20 @@ final class SermonCleanerEngine {
                 tokens = tokenizePreservingBrackets(rawWords.joined(separator: " "), maxLen: maxLen)
                 continue
             }
-            
+
             let cleanedLine = firstCandidate.replacingOccurrences(of: "[ \\-]+$", with: "", options: .regularExpression)
             lines.append(cleanedLine)
             tokens = Array(tokens[bestIdx...])
             if tokens.first == "-" { tokens.removeFirst() }
         }
-        
+
         return lines
     }
-    
+
     static func splitPlainLine(_ text: String, maxLen: Int) -> [String] {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return [] }
-        
+
         if let match = regexFirstMatch(trimmed, pattern: "^([^\\x00-\\x7F].*?)\\.\\.\\.([a-zA-Z'].*?)\\.\\.\\.(\".*)$") {
             var res: [String] = []
             res.append(contentsOf: smartWrapText(match[1], maxLen: maxLen))
@@ -790,76 +919,75 @@ final class SermonCleanerEngine {
             res.append(contentsOf: smartWrapText(match[3], maxLen: maxLen))
             return res
         }
-        
+
         return smartWrapText(trimmed, maxLen: maxLen)
     }
-    
+
     static func splitLongVerse(refPrefix: String, body: String, maxTotalLen: Int) -> [String] {
         let cleanedBody = cleanVerseBody(body)
         let fullPrefix = "\(refPrefix) - "
         let availLen = max(45, maxTotalLen - fullPrefix.count)
-        
+
         let marked = regexReplace(cleanedBody, pattern: "\\s*(?=\\(\\d{1,3}\\)\\s)", template: "\u{0000}")
         let segments = marked.components(separatedBy: "\u{0000}")
         var finalLines: [String] = []
-        
+
         for rawSeg in segments {
             var seg = rawSeg.trimmingCharacters(in: .whitespacesAndNewlines)
             if seg.hasSuffix(";") { seg.removeLast() }
             seg = regexReplace(seg, pattern: "^\\(([1-9]|1\\d)\\)\\s+", template: "")
             if seg.isEmpty { continue }
-            
+
             for chunk in smartWrapText(seg, maxLen: availLen) {
                 finalLines.append("\(fullPrefix)\(chunk)")
             }
         }
         return finalLines
     }
-    
+
     // MARK: - Main Sermon Line Processor
-    
+
     static func processSermonFile(
         url: URL,
-        fallbackSpeaker: String,
-        maxLineChars: Int = defaultMaxLineChars
+        speaker: String,
+        maxLineChars: Int = defaultMaxLineChars,
+        fallbackTitle: String? = nil
     ) throws -> SermonProcessingResult {
         let clampedLimit = max(45, min(250, maxLineChars))
         let rawLines = try extractLines(from: url)
         var sermonTitle = ""
-        var emailSubjectFallback = ""
-        var extractedSpeaker: String? = nil
+        var emailSubjectFallback = fallbackTitle ?? ""
         var outputLines: [String] = []
         var scriptureList: [String] = []
-        
+
         var activeHeaderRef: String? = nil
         var activeHeaderHasVerse = false
         var seenFirstContentLine = false
-        
+
         var idx = 0
         while idx < rawLines.count {
             let line = cleanBasicTypography(rawLines[idx])
             idx += 1
             if line.isEmpty { continue }
-            
+
             if line == slideBreakMarker {
                 activeHeaderRef = nil
                 activeHeaderHasVerse = false
                 continue
             }
-            
-            if let sender = cleanEmailSender(line) {
-                if !sender.isEmpty { extractedSpeaker = sender }
+
+            if cleanEmailSender(line) != nil {
                 continue
             }
-            
+
             if let subjMatch = regexFirstMatch(line, pattern: "^Subject\\s*:\\s*(.+)$") {
                 let cleanedSubj = cleanEmailSubject(subjMatch[1])
                 if !cleanedSubj.isEmpty { emailSubjectFallback = cleanedSubj.capitalized }
                 continue
             }
-            
+
             if regexFirstMatch(line, pattern: "^(?:Date|Sent|To|Cc)\\s*:\\s*") != nil { continue }
-            
+
             if ["SERMON:", "TITLE:"].contains(line.uppercased()), idx < rawLines.count {
                 sermonTitle = cleanBasicTypography(rawLines[idx]).capitalized
                 seenFirstContentLine = true
@@ -870,7 +998,7 @@ final class SermonCleanerEngine {
                 seenFirstContentLine = true
                 continue
             }
-            
+
             if !seenFirstContentLine {
                 seenFirstContentLine = true
                 if sermonTitle.isEmpty && line.count < 65 {
@@ -880,15 +1008,14 @@ final class SermonCleanerEngine {
                     }
                 }
             }
-            
+
             if ["TOPIC:", "TOPIC"].contains(line.uppercased()) { continue }
-            
-            // Standalone scripture reference line
+
             if let standalone = regexFirstMatch(line, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?$") {
                 let bookRaw = standalone[1]
                 let numsRaw = standalone[2]
                 var transRaw: String? = standalone[3].isEmpty ? nil : standalone[3]
-                
+
                 if transRaw == nil && idx < rawLines.count {
                     let nextClean = cleanBasicTypography(rawLines[idx])
                     if nextClean != slideBreakMarker,
@@ -897,14 +1024,14 @@ final class SermonCleanerEngine {
                         idx += 1
                     }
                 }
-                
+
                 let formattedRef = formatRefPrefix(bookRaw, numsRaw, transRaw)
                 activeHeaderRef = formattedRef
                 activeHeaderHasVerse = false
                 addScriptureRef(&scriptureList, formattedRef)
                 continue
             }
-            
+
             if let activeRef = activeHeaderRef {
                 if isVerseContinuation(line, hasSeenVerse: activeHeaderHasVerse, activeRef: activeRef) {
                     outputLines.append(contentsOf: splitLongVerse(refPrefix: activeRef, body: line, maxTotalLen: clampedLimit))
@@ -915,12 +1042,10 @@ final class SermonCleanerEngine {
                     activeHeaderHasVerse = false
                 }
             }
-            
-            // Split inline parenthetical references into sub-lines
+
             let subLines = splitInlineParenRefs(line)
-            
+
             for sub in subLines {
-                // 1. Topic: Ref on single line
                 if let topicColon = regexFirstMatch(sub, pattern: "^([A-Za-z\\s]+?)\\s*:\\s*\(refCorePattern)\\s*$") {
                     let topicName = formatTopicLine(topicColon[1].trimmingCharacters(in: .whitespaces))
                     let refLine = formatRefPrefix(topicColon[2], topicColon[3], topicColon[4].isEmpty ? nil : topicColon[4])
@@ -929,21 +1054,20 @@ final class SermonCleanerEngine {
                     addScriptureRef(&scriptureList, refLine)
                     continue
                 }
-                
-                // 2. Leading verse reference + body on single line
+
                 if let leadMatch = regexFirstMatch(sub, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?\\s*(?:-\\s*)?(.*)$"),
                    !leadMatch[4].isEmpty {
                     let bookRaw = leadMatch[1]
                     var numsRaw = leadMatch[2]
                     var leadTrans: String? = leadMatch[3].isEmpty ? nil : leadMatch[3]
                     var body = leadMatch[4].trimmingCharacters(in: .whitespaces)
-                    
+
                     if !body.hasPrefix(";") {
                         if let trailMatch = regexFirstMatch(body, pattern: "\\s*\\(?(\(translationsRegex))\\)?\\.?\\s*$") {
                             if leadTrans == nil { leadTrans = trailMatch[1] }
                             body = regexReplace(body, pattern: "\\s*\\(?(\(translationsRegex))\\)?\\.?\\s*$", template: "", caseInsensitive: true)
                         }
-                        
+
                         (numsRaw, leadTrans) = mergeWithPreviousStandaloneRef(
                             outputLines: &outputLines,
                             scriptureList: &scriptureList,
@@ -951,17 +1075,16 @@ final class SermonCleanerEngine {
                             numsRaw: numsRaw,
                             leadTrans: leadTrans
                         )
-                        
+
                         let refPrefix = formatRefPrefix(bookRaw, numsRaw, leadTrans)
                         addScriptureRef(&scriptureList, refPrefix)
                         outputLines.append(contentsOf: splitLongVerse(refPrefix: refPrefix, body: body, maxTotalLen: clampedLimit))
                         continue
                     }
                 }
-                
-                // 3. Topic / commentary line + multi_ref_match & inline_cite
+
                 let formattedTopic = standardizeRefsInText(formatTopicLine(sub))
-                
+
                 let multiRefMatch = regexFirstMatch(
                     formattedTopic,
                     pattern: "^(\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?(?:\\s*;\\s*\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?)+)"
@@ -970,9 +1093,9 @@ final class SermonCleanerEngine {
                     formattedTopic,
                     pattern: "\\((\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?)\\)\\s+[A-Z\"]"
                 )
-                
+
                 outputLines.append(contentsOf: splitPlainLine(formattedTopic, maxLen: clampedLimit))
-                
+
                 if let multi = multiRefMatch {
                     let refs = multi[1].components(separatedBy: ";").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                     outputLines.append(contentsOf: refs)
@@ -981,33 +1104,33 @@ final class SermonCleanerEngine {
                     }
                     continue
                 }
-                
+
                 if let cite = inlineCite {
                     outputLines.append(cite[1])
                     addScriptureRef(&scriptureList, cite[1])
                     continue
                 }
-                
+
                 for m in regexMatches(formattedTopic, pattern: refCorePattern) {
                     let extractedRef = formatRefPrefix(m[1], m[2], m[3].isEmpty ? nil : m[3])
                     addScriptureRef(&scriptureList, extractedRef)
                 }
             }
         }
-        
+
         if sermonTitle.isEmpty {
             sermonTitle = !emailSubjectFallback.isEmpty ? emailSubjectFallback : extractTitleFromFilename(url)
         }
-        
-        let finalSpeaker = (extractedSpeaker?.isEmpty == false) ? extractedSpeaker! : fallbackSpeaker
+
+        let cleanSpk = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
         return SermonProcessingResult(
-            speaker: finalSpeaker,
+            speaker: cleanSpk.isEmpty ? defaultSpeaker : cleanSpk,
             title: sermonTitle,
             lines: outputLines,
             scriptures: scriptureList
         )
     }
-    
+
     private static func mergeWithPreviousStandaloneRef(
         outputLines: inout [String],
         scriptureList: inout [String],
@@ -1022,10 +1145,10 @@ final class SermonCleanerEngine {
         let prevBook = prevMatch[1]
         let prevNums = prevMatch[2]
         let prevTrans: String? = prevMatch[3].isEmpty ? nil : prevMatch[3]
-        
+
         let currChap = numsRaw.components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
         let prevChap = prevNums.components(separatedBy: ":")[0].trimmingCharacters(in: .whitespaces)
-        
+
         if getCanonicalBook(bookRaw) == getCanonicalBook(prevBook) && currChap == prevChap && prevNums.contains(":") {
             let popped = outputLines.removeLast()
             if scriptureList.last == popped { scriptureList.removeLast() }
@@ -1036,31 +1159,26 @@ final class SermonCleanerEngine {
         }
         return (numsRaw, leadTrans)
     }
-    
+
     private static func isVerseContinuation(_ line: String, hasSeenVerse: Bool, activeRef: String? = nil) -> Bool {
-        // Numbered outline points (e.g., "2. Manifestation...") are NEVER verse continuations
         if regexFirstMatch(line, pattern: "^\\d{1,3}[.)]\\s+", caseInsensitive: false) != nil {
             return false
         }
-        // Explicit study note starters are NEVER verse continuations
         if regexFirstMatch(line, pattern: "^(?:The\\s+Hebrew|The\\s+Greek|In\\s+[A-Z]|Key\\s+|This\\s+implies|The\\s+scripture|The\\s+verse|Know\\b)\\b", caseInsensitive: false) != nil {
             return false
         }
-        // Line starting with a bare verse number (e.g., "24 And he said...")
         if regexFirstMatch(line, pattern: "^\\d{1,3}\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
             return true
         }
-        // First line immediately following a standalone scripture reference header
         if !hasSeenVerse && !line.hasSuffix(":") {
             return true
         }
-        // If we ALREADY captured the first verse line, only continue if the new line contains an inline verse number
         if regexFirstMatch(line, pattern: "(?<=[.?!;:,\"\\]])\\s+\\d{1,2}\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
             return true
         }
         return false
     }
-    
+
     private static func extractTitleFromFilename(_ url: URL) -> String {
         var stem = url.lastPathComponent
         for ext in [".eml.txt", ".eml", ".docx", ".pptx", ".ppt", ".pdf", ".txt"] {
@@ -1077,8 +1195,8 @@ final class SermonCleanerEngine {
         }
         return cleaned
     }
-    
-    private static func cleanEmailSender(_ line: String) -> String? {
+
+    static func cleanEmailSender(_ line: String) -> String? {
         guard let m = regexFirstMatch(line, pattern: "^From\\s*:\\s*(.+)$") else { return nil }
         var val = m[1].trimmingCharacters(in: .whitespaces)
         val = regexReplace(val, pattern: "\\s*<[^>]+>", template: "")

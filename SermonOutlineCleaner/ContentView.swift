@@ -5,11 +5,15 @@ import ApplicationServices
 
 struct ContentView: View {
     @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = (NSHomeDirectory() as NSString).appendingPathComponent("Desktop")
-    @AppStorage("speakerName") private var speakerName: String = SermonCleanerEngine.defaultSpeaker
     @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
-    @AppStorage("preferEmlSender") private var preferEmlSender: Bool = false
+
+    // Speaker Name starts blank on every launch
+    @State private var speakerName: String = ""
 
     @State private var currentFileURL: URL? = nil
+    @State private var currentFallbackTitle: String? = nil
+
+    @State private var previewSpeaker: String = ""
     @State private var previewTitle: String = ""
     @State private var previewText: String = ""
     @State private var previewScriptures: String = ""
@@ -19,12 +23,13 @@ struct ContentView: View {
     @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pptx, .pdf, .eml, .txt) or click Select Outline"
     @State private var isTargeted: Bool = false
 
-    // Computed property for UI display
     private var currentSermonTextFilename: String {
-        sermonTextFilename(title: previewTitle, speaker: speakerName)
+        guard !previewText.isEmpty || !previewTitle.isEmpty else {
+            return "SermonText.txt"
+        }
+        return sermonTextFilename(title: previewTitle, speaker: previewSpeaker)
     }
 
-    // Explicit helper so writeFilesToDisk() never reads stale state
     private func sermonTextFilename(title: String, speaker: String) -> String {
         let safeTitle = sanitizeFilenameComponent(
             title.isEmpty ? "Untitled" : title,
@@ -68,7 +73,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            // 1. Settings Bar: Save Location, Speaker Name & Column Limit
+            // 1. Settings Bar: Save Location, Speaker Name (starts blank) & Column Limit
             GroupBox {
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
                     GridRow {
@@ -86,14 +91,9 @@ struct ContentView: View {
                             .fontWeight(.semibold)
                             .frame(width: 105, alignment: .leading)
                         HStack(spacing: 12) {
-                            TextField("Pastor Ernest Fink", text: $speakerName)
+                            TextField("Leave blank to prompt on file load…", text: $speakerName)
                                 .textFieldStyle(.roundedBorder)
-                                .onSubmit(saveManualEditsToDisk)
-
-                            Toggle("Use .eml Sender", isOn: $preferEmlSender)
-                                .toggleStyle(.checkbox)
-                                .font(.caption)
-                                .help("When checked, emails (.eml) will overwrite the Speaker Name with the email's From: sender.")
+                                .onSubmit(applySpeakerChangeIfLoaded)
 
                             Divider().frame(height: 18)
 
@@ -112,8 +112,7 @@ struct ContentView: View {
                                     reprocessIfLoaded()
                                 }
                         }
-                        Button("Save Edits", action: saveManualEditsToDisk)
-                            .frame(width: 110)
+                        Color.clear.frame(width: 110, height: 1)
                     }
                 }
                 .padding(6)
@@ -160,41 +159,55 @@ struct ContentView: View {
                 .padding(.horizontal, 16)
             }
             .frame(height: 68)
-            .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+            .onDrop(
+                of: [
+                    .fileURL,
+                    .emailMessage,
+                    UTType("com.apple.mail.email") ?? .emailMessage,
+                    .pdf,
+                    .presentation,
+                    .plainText,
+                    UTType(filenameExtension: "docx") ?? .data,
+                    UTType(filenameExtension: "pptx") ?? .data,
+                    UTType(filenameExtension: "eml") ?? .data,
+                    .data
+                ],
+                isTargeted: $isTargeted
+            ) { providers in
                 handleDrop(providers: providers)
             }
 
-            // 3. 2x2 Mini Previews of Latest Created Files
+            // 3. 2x2 Read-Only Previews of Created Files
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
                     PreviewCard(
                         title: "MainSpeaker.txt",
-                        badge: "1 line",
-                        text: $speakerName
+                        badge: previewSpeaker.isEmpty ? "—" : "1 line",
+                        text: previewSpeaker
                     )
                     PreviewCard(
                         title: "SermonTitle.txt",
-                        badge: "1 line",
-                        text: $previewTitle
+                        badge: previewTitle.isEmpty ? "—" : "1 line",
+                        text: previewTitle
                     )
                 }
-                .frame(height: 82)
-
+                .frame(height: 78)
+                
                 HStack(spacing: 12) {
                     PreviewCard(
                         title: currentSermonTextFilename,
                         badge: "\(lineCount) lines • max \(maxLineChars) ch",
-                        text: $previewText
+                        text: previewText
                     )
                     PreviewCard(
                         title: "SermonScriptures.txt",
                         badge: "\(scriptureCount) scriptures",
-                        text: $previewScriptures
+                        text: previewScriptures
                     )
                 }
             }
 
-            // 4. Footer Actions
+            // 4. Footer Actions (Read-Only Previews — No Sync Button)
             HStack {
                 Button {
                     revealInFinder()
@@ -205,28 +218,22 @@ struct ContentView: View {
                 Spacer()
 
                 Button {
-                    saveManualEditsToDisk()
-                } label: {
-                    Label("Sync Preview Edits to Disk", systemImage: "square.and.arrow.down")
-                }
-
-                Button {
                     importToProPresenter()
                 } label: {
                     Label("Import to ProPresenter", systemImage: "play.display")
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(previewText.isEmpty)
             }
         }
         .padding(16)
         .frame(minWidth: 760, minHeight: 560)
-        .onAppear(perform: loadExistingPreviewsFromDisk)
         .onOpenURL { url in
-            processFile(url)
+            handleIncomingFile(url)
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Actions & Dialogs
 
     private func commitActiveTextFields() {
         NSApp.keyWindow?.makeFirstResponder(nil)
@@ -243,7 +250,6 @@ struct ContentView: View {
 
         if panel.runModal() == .OK, let url = panel.url {
             saveDirectoryPath = url.path
-            loadExistingPreviewsFromDisk()
         }
     }
 
@@ -266,47 +272,215 @@ struct ContentView: View {
         ]
 
         if panel.runModal() == .OK, let url = panel.url {
-            processFile(url)
+            handleIncomingFile(url)
         }
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         commitActiveTextFields()
         guard let provider = providers.first else { return false }
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
-            DispatchQueue.main.async {
-                processFile(url)
+        
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SermonCleanerDrops", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        
+        // 1. Check if Apple Mail is dropping a whole email message (.eml stream)
+        let mailTypes = ["com.apple.mail.email", UTType.emailMessage.identifier]
+        for mailType in mailTypes where provider.hasItemConformingToTypeIdentifier(mailType) {
+            provider.loadFileRepresentation(forTypeIdentifier: mailType) { tempURL, _ in
+                if let tempURL = tempURL {
+                    let fileName = tempURL.lastPathComponent.hasSuffix(".eml")
+                    ? tempURL.lastPathComponent
+                    : "\(tempURL.lastPathComponent).eml"
+                    let destURL = tempDir.appendingPathComponent(fileName)
+                    try? FileManager.default.removeItem(at: destURL)
+                    if (try? FileManager.default.copyItem(at: tempURL, to: destURL)) != nil {
+                        DispatchQueue.main.async {
+                            handleIncomingFile(destURL)
+                        }
+                        return
+                    }
+                }
+                
+                // Fallback if Mail provides raw RFC-822 data instead of a file promise
+                provider.loadDataRepresentation(forTypeIdentifier: mailType) { data, _ in
+                    guard let data = data, !data.isEmpty else { return }
+                    let destURL = tempDir.appendingPathComponent("DroppedEmail.eml")
+                    try? data.write(to: destURL, options: .atomic)
+                    DispatchQueue.main.async {
+                        handleIncomingFile(destURL)
+                    }
+                }
+            }
+            return true
+        }
+        
+        // 2. Standard Finder file drop (or Mail attachment with a direct file URL)
+        if provider.canLoadObject(ofClass: URL.self) {
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                guard let url = url, url.isFileURL else { return }
+                DispatchQueue.main.async {
+                    handleIncomingFile(url)
+                }
+            }
+            return true
+        }
+        
+        // 3. Attachment dragged directly out of an Apple Mail message body (File Promise / Stream)
+        let attachmentTypes: [UTType] = [
+            UTType(filenameExtension: "docx") ?? .data,
+            UTType(filenameExtension: "pptx") ?? .data,
+            UTType(filenameExtension: "ppt") ?? .data,
+            .pdf,
+            .presentation,
+            .plainText,
+            .item
+        ]
+        
+        for type in attachmentTypes where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+            provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { tempURL, _ in
+                guard let tempURL = tempURL else { return }
+                let destURL = tempDir.appendingPathComponent(tempURL.lastPathComponent)
+                try? FileManager.default.removeItem(at: destURL)
+                do {
+                    try FileManager.default.copyItem(at: tempURL, to: destURL)
+                    DispatchQueue.main.async {
+                        handleIncomingFile(destURL)
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        statusMessage = "⚠️ Could not read dropped Mail attachment: \(error.localizedDescription)"
+                    }
+                }
+            }
+            return true
+        }
+        
+        return false
+    }
+
+    private func handleIncomingFile(_ fileURL: URL) {
+        commitActiveTextFields()
+
+        var targetURL = fileURL
+        var suggestedSpeaker = SermonCleanerEngine.defaultSpeaker
+        var fallbackTitle: String? = nil
+
+        // Inspect .eml files for From: sender and any attachments
+        if SermonCleanerEngine.isEmlFile(fileURL) {
+            let inspection = SermonCleanerEngine.inspectEmlFile(fileURL)
+            if let sender = inspection.sender, !sender.isEmpty {
+                suggestedSpeaker = sender
+            }
+            fallbackTitle = inspection.subject
+
+            if !inspection.attachments.isEmpty {
+                guard let chosenURL = promptForEmlSource(emlURL: fileURL, attachments: inspection.attachments) else {
+                    statusMessage = "Cancelled outline selection."
+                    return
+                }
+                targetURL = chosenURL
             }
         }
-        return true
+
+        // If Speaker Name is blank, display a dialog asking for the speaker name
+        var resolvedSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if resolvedSpeaker.isEmpty {
+            guard let enteredSpeaker = promptForSpeakerName(defaultName: suggestedSpeaker) else {
+                statusMessage = "Cancelled speaker name prompt."
+                return
+            }
+            resolvedSpeaker = enteredSpeaker
+            speakerName = enteredSpeaker
+        }
+
+        runSermonProcessor(url: targetURL, speaker: resolvedSpeaker, fallbackTitle: fallbackTitle)
+    }
+
+    private func promptForSpeakerName(defaultName: String) -> String? {
+        let alert = NSAlert()
+        alert.messageText = "Enter Speaker Name"
+        alert.informativeText = "Confirm or enter the speaker's name for this sermon outline:"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Continue")
+        alert.addButton(withTitle: "Cancel")
+
+        let inputField = NSTextField(frame: NSRect(x: 0, y: 0, width: 290, height: 24))
+        inputField.stringValue = defaultName
+        inputField.placeholderString = SermonCleanerEngine.defaultSpeaker
+        alert.accessoryView = inputField
+        alert.window.initialFirstResponder = inputField
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return nil }
+
+        let entered = inputField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return entered.isEmpty ? defaultName : entered
+    }
+
+    private func promptForEmlSource(emlURL: URL, attachments: [EmlAttachment]) -> URL? {
+        let alert = NSAlert()
+        alert.messageText = "Email Contains Attachments"
+        alert.informativeText = "Choose which element from \"\(emlURL.lastPathComponent)\" to parse for the sermon text:"
+        alert.alertStyle = .informational
+
+        for attachment in attachments {
+            alert.addButton(withTitle: "Attachment: \(attachment.filename)")
+        }
+        alert.addButton(withTitle: "Email Body Text")
+        alert.addButton(withTitle: "Cancel")
+
+        let response = alert.runModal()
+        let index = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+
+        if index >= 0 && index < attachments.count {
+            let chosen = attachments[index]
+            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("SermonCleanerAttachments", isDirectory: true)
+            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            let tempFileURL = tempDir.appendingPathComponent(chosen.filename)
+            do {
+                try chosen.data.write(to: tempFileURL, options: .atomic)
+                return tempFileURL
+            } catch {
+                statusMessage = "⚠️ Could not extract attachment: \(error.localizedDescription)"
+                return nil
+            }
+        } else if index == attachments.count {
+            return emlURL
+        } else {
+            return nil
+        }
+    }
+
+    private func applySpeakerChangeIfLoaded() {
+        commitActiveTextFields()
+        guard currentFileURL != nil else { return }
+        reprocessIfLoaded()
     }
 
     private func reprocessIfLoaded() {
         commitActiveTextFields()
-        if let url = currentFileURL {
-            processFile(url)
-        }
+        guard let url = currentFileURL else { return }
+        let activeSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedSpeaker = activeSpeaker.isEmpty
+            ? (previewSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : previewSpeaker)
+            : activeSpeaker
+        runSermonProcessor(url: url, speaker: resolvedSpeaker, fallbackTitle: currentFallbackTitle)
     }
 
-    private func processFile(_ fileURL: URL) {
+    private func runSermonProcessor(url: URL, speaker: String, fallbackTitle: String?) {
         do {
-            commitActiveTextFields()
-            currentFileURL = fileURL
-
-            let currentTypedSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let activeFallback = currentTypedSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : currentTypedSpeaker
+            currentFileURL = url
+            currentFallbackTitle = fallbackTitle
 
             let result = try SermonCleanerEngine.processSermonFile(
-                url: fileURL,
-                fallbackSpeaker: activeFallback,
-                maxLineChars: maxLineChars
+                url: url,
+                speaker: speaker,
+                maxLineChars: maxLineChars,
+                fallbackTitle: fallbackTitle
             )
 
-            let resolvedSpeaker = preferEmlSender ? result.speaker : activeFallback
-
-            speakerName = resolvedSpeaker
+            previewSpeaker = result.speaker
             previewTitle = result.title
             previewText = result.lines.joined(separator: "\n")
             previewScriptures = result.scriptures.joined(separator: "\n")
@@ -315,7 +489,7 @@ struct ContentView: View {
             scriptureCount = result.scriptures.count
 
             let savedFilename = try writeFilesToDisk(
-                speaker: resolvedSpeaker,
+                speaker: result.speaker,
                 title: result.title,
                 textBody: previewText,
                 scripturesBody: previewScriptures
@@ -357,71 +531,11 @@ struct ContentView: View {
         return targetFilename
     }
 
-    private func saveManualEditsToDisk() {
-        commitActiveTextFields()
-        do {
-            let savedFilename = try writeFilesToDisk(
-                speaker: speakerName,
-                title: previewTitle,
-                textBody: previewText,
-                scripturesBody: previewScriptures
-            )
-            lineCount = previewText.split(whereSeparator: \.isNewline).count
-            scriptureCount = previewScriptures.split(whereSeparator: \.isNewline).count
-            statusMessage = "✓ Updated \(savedFilename) in \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
-        } catch {
-            statusMessage = "⚠️ Failed to write files: \(error.localizedDescription)"
-        }
-    }
-
-    private func loadExistingPreviewsFromDisk() {
-        let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
-        if let spk = try? String(contentsOf: outDir.appendingPathComponent("MainSpeaker.txt"), encoding: .utf8) {
-            let trimmed = spk.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty { speakerName = trimmed }
-        }
-        if let ttl = try? String(contentsOf: outDir.appendingPathComponent("SermonTitle.txt"), encoding: .utf8) {
-            previewTitle = ttl.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        let expectedTextURL = outDir.appendingPathComponent(currentSermonTextFilename)
-        if let txt = try? String(contentsOf: expectedTextURL, encoding: .utf8) {
-            previewText = txt.trimmingCharacters(in: .whitespacesAndNewlines)
-            lineCount = previewText.isEmpty ? 0 : previewText.components(separatedBy: .newlines).count
-        } else if let latestURL = mostRecentSermonTextFile(in: outDir),
-                  let txt = try? String(contentsOf: latestURL, encoding: .utf8) {
-            previewText = txt.trimmingCharacters(in: .whitespacesAndNewlines)
-            lineCount = previewText.isEmpty ? 0 : previewText.components(separatedBy: .newlines).count
-        }
-
-        if let scr = try? String(contentsOf: outDir.appendingPathComponent("SermonScriptures.txt"), encoding: .utf8) {
-            previewScriptures = scr.trimmingCharacters(in: .whitespacesAndNewlines)
-            scriptureCount = previewScriptures.isEmpty ? 0 : previewScriptures.components(separatedBy: .newlines).count
-        }
-    }
-
-    private func mostRecentSermonTextFile(in directory: URL) -> URL? {
-        guard let urls = try? FileManager.default.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.contentModificationDateKey],
-            options: [.skipsHiddenFiles]
-        ) else { return nil }
-
-        let matching = urls.filter { $0.lastPathComponent.hasPrefix("SermonText-") && $0.pathExtension == "txt" }
-        return matching.max { a, b in
-            let dateA = (try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-            let dateB = (try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-            return dateA < dateB
-        }
-    }
-
     private func revealInFinder() {
         let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
         let sermonTextURL = outDir.appendingPathComponent(currentSermonTextFilename)
-        if FileManager.default.fileExists(atPath: sermonTextURL.path) {
+        if !previewText.isEmpty && FileManager.default.fileExists(atPath: sermonTextURL.path) {
             NSWorkspace.shared.activateFileViewerSelecting([sermonTextURL])
-        } else if let latestURL = mostRecentSermonTextFile(in: outDir) {
-            NSWorkspace.shared.activateFileViewerSelecting([latestURL])
         } else {
             NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: saveDirectoryPath)
         }
@@ -437,7 +551,7 @@ struct ContentView: View {
         }
 
         let targetFilename = (try? writeFilesToDisk(
-            speaker: speakerName,
+            speaker: previewSpeaker,
             title: previewTitle,
             textBody: previewText,
             scripturesBody: previewScriptures
@@ -515,7 +629,7 @@ struct ContentView: View {
                         if let proApp = NSWorkspace.shared.runningApplications.first(where: {
                             $0.localizedName == "ProPresenter" || ($0.bundleIdentifier?.contains("propresenter") == true)
                         }) {
-                            proApp.activate(options: [.activateIgnoringOtherApps])
+                            proApp.activate()
                         }
                         self.statusMessage = "✓ Imported \(targetFilename) into ProPresenter"
                     }
@@ -528,8 +642,8 @@ struct ContentView: View {
 struct PreviewCard: View {
     let title: String
     let badge: String
-    @Binding var text: String
-    
+    let text: String
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -546,16 +660,21 @@ struct PreviewCard: View {
                     .background(Color.secondary.opacity(0.15))
                     .clipShape(Capsule())
             }
-            TextEditor(text: $text)
-                .font(.system(size: 11.5, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .padding(6)
-                .background(Color(NSColor.textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
-                )
+            ScrollView([.vertical, .horizontal]) {
+                Text(text.isEmpty ? "—" : text)
+                    .font(.system(size: 11.5, design: .monospaced))
+                    .foregroundStyle(text.isEmpty ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                    .padding(8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(NSColor.textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
+            )
         }
     }
 }
