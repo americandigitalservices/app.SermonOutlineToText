@@ -1,0 +1,457 @@
+Delivered-To: tech@cityharvestalbany.com
+Received: by 2002:a05:6a10:8146:b0:75b:465e:fdad with SMTP id l6csp4983343pxa;
+        Sun, 18 Oct 2026 04:59:31 -0700 (PDT)
+X-Forwarded-Encrypted: i=5; AKwUvBydiq1g5Pfu3Zxt6W/8IQrLFYZD2Y1q2/hlvawd2k4HisijvjsQvLgZ0ggl0YXvUHhrQrmF@cityharvestalbany.com
+X-Received: by 2002:a05:6830:d07:b0:826:1ccc:8bb9 with SMTP id 46e09a7af769-844ff7097aamr4498815a34.6.1792324771437;
+        Sun, 18 Oct 2026 04:59:31 -0700 (PDT)
+ARC-Seal: i=4; a=rsa-sha256; t=1792324771; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=rjl0FdihK5QTBpQjmFxRLPmH3ZOhz+0JQmTHQw/LqoFRdRrL5LNI3LWN7UxN5/pyc4
+         2kwi6l7eZQ6gZeJhvWYksmiYu0u+4aHGo3SHcGFJ8fxhJeM7vGGnRyLq83oIh1OxvR43
+         FR8JbziBWMmO7UzXVr4mpJj1rRw6JwQD+f50qcR/rHZQy+/+Pe/AdXH5MCMSlS9fYya8
+         GTvgbgmCiOE8uV7/lw4pfLKy+TPLYaAozbwFVrQGADGruwQRhO/CtJ2SKIkNWmmpiqOJ
+         B1ACHKNhOKB/8NkPKOSsmhTBBqjnkL+zbrm4c/1yy1i1X7GjsMKwzWCpHEEoDjqFQm1v
+         f4EQ==
+ARC-Message-Signature: i=4; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=fhWoP8l2uOvn2wQHvb/M2oUDM+jgnGmW3mE9LYEBDss=;
+        fh=WY52TKjjfktyuY/FvQh98ZQMRaXAvxLubRwH80Yh84M=;
+        b=nEBpFb0SX1z4fqtlM76yBzELTzWEFFWm+sL0vdYtypkaVd8fSlqqq+Dt/KaIeDsl6z
+         bq/aQOZlZmAzJzM3F3PFv3X+b9LpoOB/ZIDeSh6qlVHbRQOAGLMIud722La7uw4jD9Md
+         4U+cGyQ0lr8LNzHKhbSmCCZlbqDLj9iCG/dCgR+1Ow0N5HLzGLNkV/V5c9N2ytpO4Dx6
+         8QzpmSO4G8EZFnWqC16op5DAlktSOqiOjbvvgoCHedqAB0aW3BETzpcg4HiPqsipRKJZ
+         BoN0BPKqyS6VFvcUt3PJKcBMF0o1y7jD8/HNxxZiflfKDRk0hLwsVYuTGtBmjp8rqHPj
+         T9nw==;
+        dara=google.com
+ARC-Authentication-Results: i=4; mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=hRTWv77k;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbixj2llamgqemc6l4zi@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBIXJ2LLAMGQEMC6L4ZI@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Return-Path: <mediateam+bncBDTIPMMHX4HBBIXJ2LLAMGQEMC6L4ZI@cityharvestalbany.com>
+Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+        by mx.google.com with SMTPS id 46e09a7af769-8458e72d077sor2762461a34.9.2026.10.18.04.59.31
+        for <tech@cityharvestalbany.com>
+        (Google Transport Security);
+        Sun, 18 Oct 2026 04:59:31 -0700 (PDT)
+Received-SPF: pass (google.com: domain of mediateam+bncbdtipmmhx4hbbixj2llamgqemc6l4zi@cityharvestalbany.com designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=hRTWv77k;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbixj2llamgqemc6l4zi@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBIXJ2LLAMGQEMC6L4ZI@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+ARC-Seal: i=3; a=rsa-sha256; t=1792324771; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=GQuHMmNYNi4+nCpwYIA8CKlHC3TCoN1fwtVVyVFCE2MleBnNjqzcEsH+1GQ931uhgd
+         azxf8cupW+qJXhSkE6/2OQEP743fiXiJy510smqG1caHbKyQw41fjJomDyAGYFHp88Jw
+         d32/PQdVCzsd6vAv7vbYHiBBGXdjrqoRmKAPKP3fAfEmO53wLSHQzsB8yYoxDgP047lc
+         NAUPlUri/rHwnIE2MB6lYCcq6TNeYQgnEyrWpzpHptstv3MNNAhTc94zp3uAF3e65dL4
+         owbO3zuRn9yj3rxEW4etHoyj3MyU3lbUOOLETtT4aqllQDX9p2jmrBn5Io0uUFT+QqU5
+         Cc6g==
+ARC-Message-Signature: i=3; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=fhWoP8l2uOvn2wQHvb/M2oUDM+jgnGmW3mE9LYEBDss=;
+        fh=WY52TKjjfktyuY/FvQh98ZQMRaXAvxLubRwH80Yh84M=;
+        b=ClD+RS2UyB4cqYHbaGoE9uMf4kgoo6HD9M05odIHVO+hBzf3vFT/RA8NosOevFefMq
+         qYfN6IL+T5M34mBsbTDxzZi6pfWCY0F79ZYGDTwqE+BNkJxXi2InKUPJkf2gh9HOpcEq
+         f3wntXE8SR4OZlX39Pv/aAitAMvyaO7ERHCQST3C03LX5IJdPWhJxdD1Puc8Lnws8DPQ
+         qGnO9krb2w5u+s/8hhlKuxWfHVtfzF8/gY17kDIgr8Zu7zjwXLgUm0FBtAzs9kZk8zRr
+         clHdUHDLLKDk+0zGw/ZWko2v47d5ewgwh+6LfN/pAJvuAE4JGfzd2tHTRU6ygdHGIE8K
+         +2Ig==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=3; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b=RmHkdPKe;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=cityharvestalbany-com.20251104.gappssmtp.com; s=20251104; t=1792324771; x=1792929571; darn=cityharvestalbany.com;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:x-original-authentication-results
+         :x-original-sender:content-type:to:subject:message-id:date:from
+         :mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=fhWoP8l2uOvn2wQHvb/M2oUDM+jgnGmW3mE9LYEBDss=;
+        b=hRTWv77kVy1OEwDANHmb406fB7Rbv1eneD64hinGPAtyAT0EijvhJAxNG0JHaaRr2c
+         x5P2NOqzMOX+rQbRggMSBU4V/PLYmXNvtMA2UDK4bjU4OTfDq0QfzNRkgrTrj7wzliE2
+         bQU3nDzF1sQgK4AZw+Y7XMd1Vn+tLILUfD00nHcYDTcPjYBr3OQ31OCcRyqrNohC1T8+
+         aM4Oek47YahkO5zFeQSmV4gOYXaOH28bcMK3PWv8b1V5QCkOtEiE5ZKgFETr9d78hUGx
+         wb08Jkg1OUPITwYOy2SYUAED7UoFsRZyU5isrRi8/G0inG93ueU/q75eRsFZSnUSNyNY
+         vUJg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792324771; x=1792929571;
+        h=list-unsubscribe:list-archive:list-help:list-post
+         :x-spam-checked-in-group:list-id:mailing-list:precedence:reply-to
+         :x-original-authentication-results:x-original-sender:content-type:to
+         :subject:message-id:date:from:mime-version:x-gm-gg:x-beenthere
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=fhWoP8l2uOvn2wQHvb/M2oUDM+jgnGmW3mE9LYEBDss=;
+        b=QvCH4U7Pi1aDk7YeNomUjHW6ElMpeKcMk4K8Y5tvTCiRyb1qlE/k+iVY+AHb/A4kYO
+         CEJdYPzc47hk5GaZWKGswhef4xXs2LWv5KM381u+pLlmbSAav/TlMjzjLrOhHjxvuyMY
+         v+nEANlLG6NTEeMKmcDsb4u2LR4aY9wEIpDzB/xtgXhRv3vSROOObDGEyg7su8nJeCf5
+         LelnsDI737BiD0SpkWeYkF2dh/G/p4ULfMwMW/SRsatZiLLakPDTaVSnqC5/vzDjcPHK
+         a6jX2XiT+ya6LGyb19d/sk8HMeoUJuDXuBRwYlrMPkR6vs/RvH64kc2pRWJE/WH6gKV+
+         uRdQ==
+X-Forwarded-Encrypted: i=3; AKwUvBw7iQJ/flg6agB7DwQD4QNxqJ1DIECx0AGRVJ1GK6p3MMesRsuk6ohWMEHHBUvD1Psf6yVQ@cityharvestalbany.com
+X-Gm-Message-State: AFq9FYIjzeavEL65PQJwNxa/AOLr8FqzYL0NVBFZkG0oWDg7OUdYuVvy
+	vzUxjno1rwmmfm46RVhPbhHy7SwOPSh1YtKtwBx9ZesNOVnUabIkWOSHmZFK7azcc7xcmUXe8HR
+	myA==
+X-Received: by 2002:a4a:e90f:0:b0:6db:175e:898 with SMTP id 006d021491bc7-70358497f89mr3244130eaf.88.1792324770630;
+        Sun, 18 Oct 2026 04:59:30 -0700 (PDT)
+X-BeenThere: mediateam@cityharvestalbany.com; h="ATskLddAsyI5F8GiJB1ySvr+bhkQRQ6Pe9HK2Jd2Tz6kOF06aw=="
+Received: by 2002:a05:6820:13a:b0:6b1:9f43:c57e with SMTP id
+ 006d021491bc7-703d05052e7ls1047296eaf.0.-pod-prod-07-us; Sun, 18 Oct 2026
+ 04:59:30 -0700 (PDT)
+X-Forwarded-Encrypted: i=3; AKwUvBx+JTqqOTNaX125Ayl0cbwewO5gO4GPRnrYKspI7bKt6Py2FmRQIL9Wt3H4KS1MEPxKDXADq6uS8KQ=@cityharvestalbany.com
+X-Received: by 2002:a4a:ee1a:0:b0:6f9:4f1b:39b3 with SMTP id 006d021491bc7-70352292573mr3824055eaf.4.1792324769900;
+        Sun, 18 Oct 2026 04:59:29 -0700 (PDT)
+ARC-Seal: i=2; a=rsa-sha256; t=1792324769; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=lIRzC9pWUREvjn5QOLxbKYsnm0a6Pig907/VKwm8lQgf7+lppkmALDyNJQ/tYy2qaM
+         sqnMEgfkoH7ingh4Dku72z4Elg10jqLdxMt6IDIMi1LwgvmylqLBEKY18IR/kc5jlw/c
+         ++wHPUqERJfNMhD8MkDRSk8MdvJl0Xe3iWbxzdszp4yRwGo4dqqo+FoJBLg7uWQquI0z
+         bPbi/oD8Eq2T8KPEG2X/YI0btn9Sk/RuR/GxJmWZkBnePdwJQKZ2l0/mHBxcR0Mi57Ya
+         uIeKfYnVJOoGXRpOVdf7uWUR1msIZqt5UE2bEXkaOUubcVgzPboJDjkKpRl5dSkX8QIR
+         AXZg==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=BSj0ASfpfTSHeWSS60m+ugWZWd/9VXXGAlHYWzuTfMo=;
+        fh=7pJPWil9WQZCYoFwXGHuV8BeXPM8+1/IM/HjEqaJAbY=;
+        b=qZB/Ez/GJ9M+3aiM/RJXYQnfpivz+lR6Li3WqwOf70oizxPlyJALjeyzJyR+0XikJ0
+         DZSUHuXY2DgC0iEdKZpHuVqsj9KxD6LS9YZ4tgPc01f+It8AeTUBsgw0RKadhnXYE5+x
+         4DHt1gtcGWao2k2mqSMZLZxKA1MOz0vVrLuufkCBfrT7VVdkexU0mkDorb8jjJgKyYBa
+         soT06Ctw1fLTPYFxk/ESl0rljVB5HncU1omPYVgkE1rjhzjT2xSFWD61yotSSeetsEkS
+         tdu52J3LoWWSo7VB/KRZ5e2dyFlBeOd0rU7hFmEZthjW63+Yl60E13mV1oflJ3VdZ4Iu
+         KAgA==;
+        dara=google.com
+ARC-Authentication-Results: i=2; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b=RmHkdPKe;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 006d021491bc7-7037cbb92bfsor2453345eaf.3.2026.10.18.04.59.29
+        for <mediateam@cityharvestalbany.com>
+        (Google Transport Security);
+        Sun, 18 Oct 2026 04:59:29 -0700 (PDT)
+Received-SPF: pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+ARC-Seal: i=1; a=rsa-sha256; t=1792324769; cv=none;
+        d=google.com; s=arc-20260327;
+        b=s1A4cZO8/tl+JtuvHfW1yZD/ufMZ6c+iVLzZKundd9lwfe3rSy3Xm1pCq9bEeE3lW2
+         aIKlzF4f6QNJFoJi4sgtvmdin4uaiIvSMuGIs1gSqDdaeyFO+bt58bAZLlrOT4UUb+11
+         /Iho26WcIp6xznng/Mz0WlAHccJ1qeiaoNRjiuHMmteYYHGGoHr5uaWoDzb5M4oMYzH/
+         /qIQPMxvPqHE4utb+e+PM+sG8zJYnxrb6Bl6F/6n/TWFER9UziW3r+53ppt0Sxz3chzc
+         LxD5Izp+DqikiI6LF8g+sWyu2sLa2c76zg/DZ8GHDrbD18+0LIS4imy7MGcn2/Qc0YMh
+         FQGQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=BSj0ASfpfTSHeWSS60m+ugWZWd/9VXXGAlHYWzuTfMo=;
+        fh=7pJPWil9WQZCYoFwXGHuV8BeXPM8+1/IM/HjEqaJAbY=;
+        b=dfM5HfrtCb6G7h42N2lL0x1Wg8lk6QHVhatAWrZ9qQ0g6j/DntME49FgUEM/rVt/Ed
+         86nb8QlipPJKkXuyP9cbU1bxe3AauF6aGOh7HCG8jmWg8JtsQv4SZ4UFn4ItbE5ymskq
+         GtRoqsJpnzPM42aEj3uwB+XbDkAybgyjt8VbYO7m0G/TWLy5alzc/Yd4z3NJVAozaYS8
+         1dUwfQpN9b0P6TfdCp9ZOWd4fE0jAeHfnLH+hllAhaaMjTv914di2VKKMLCvDPjpMyJi
+         lCz9jVkrLe+dtbPq5OXmu/RioXIkRRB+xPQB+agJZzGs+TpXrpoiTPMhwM++iezOkQdM
+         6ShA==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+X-Forwarded-Encrypted: i=1; AKwUvBxub1OCEzqkBlVnB2UYO4Oiq0l06KK+NL2gsfygHBWIr7TYybpAGlw+u4kOdCwZtxdQTD1oh3lgKUI=@cityharvestalbany.com
+X-Gm-Gg: AYBFou1OL9vSx7ksAXxdCxDahvIuzmkdXh1T7zUE8VAjjhiaDHjoHy4IWlNBNSpKSIm
+	YAVw5AUuSen74mx5ER0fseFzF4uGEikDycKnbRsiL9kxn//zOpOm90T1CvH29HjP9g0uQQN92SG
+	GImIkL6z7JTMDzM/gSItKnaIRwBk9UUmPGgwk/c7jC33VRj0ft9xuEgdsfPeuVB7zs2PTP14OEs
+	9t/t3G0621W/oCuDthIxvN+vfnbhm3xUV3b2/xE9jN+ElXCKu/YAskx4hvepJEFeUK6hHnN/hje
+	nYihduoXrV3sJFG8DNtf77swGBFeNv8POuOumzdTtS1zM/3zF+hR6DhE
+X-Received: by 2002:a4a:e913:0:b0:6cd:3fbd:1d6f with SMTP id
+ 006d021491bc7-7035849864amr3597507eaf.89.1792324769454; Sun, 18 Oct 2026
+ 04:59:29 -0700 (PDT)
+MIME-Version: 1.0
+From: Ernest Fink <ernestfink@gmail.com>
+Date: Sun, 18 Oct 2026 07:59:19 -0400
+X-Gm-Features: AclHuK9CIrqnEU-6GPBSfi-xvIKzOe6-ooQf2niZZdNUesIppi6_KWvzHOwbxNA
+Message-ID: <CAPJYNcLPGV=3u7tn1FVYvJ9+zO0iv=NL86Dy-fVkceWrx6_B9w@mail.gmail.com>
+Subject: [CHFC Media] Over Head
+To: Dan Horning <dsoundmn@gmail.com>, mediateam@cityharvestalbany.com
+Content-Type: multipart/alternative; boundary="000000000000349eec065e1c2113"
+X-Original-Sender: ernestfink@gmail.com
+X-Original-Authentication-Results: mx.google.com;       dkim=pass
+ header.i=@gmail.com header.s=20251104 header.b=RmHkdPKe;       arc=pass
+ (i=1);       spf=pass (google.com: domain of ernestfink@gmail.com designates
+ 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Reply-To: mediateam@cityharvestalbany.com
+Precedence: list
+Mailing-list: list mediateam@cityharvestalbany.com; contact mediateam+owners@cityharvestalbany.com
+List-ID: <mediateam.cityharvestalbany.com>
+X-Spam-Checked-In-Group: mediateam@cityharvestalbany.com
+X-Google-Group-Id: 414320174969
+List-Post: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/post>,
+ <mailto:mediateam@cityharvestalbany.com>
+List-Help: <https://support.google.com/a/cityharvestalbany.com/bin/topic.py?topic=25838>,
+ <mailto:mediateam+help@cityharvestalbany.com>
+List-Archive: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/>
+List-Unsubscribe: <mailto:googlegroups-manage+414320174969+unsubscribe@googlegroups.com>,
+ <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/subscribe>
+
+--000000000000349eec065e1c2113
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+*All Things Work Together*
+
+
+
+*Romans 8:28 (KJV) *
+And we know that all things work together for good to them that love God,
+to them who are called according to his purpose.
+
+
+
+*Two Conditions to Activate Romans 8:28*
+
+
+*1. You have to LOVE God*
+
+
+*Matthew 22:37-38 (KJV) *
+Jesus said unto him, Thou shalt love the Lord thy God with all thy heart,
+and with all thy soul, and with all thy mind. 38  This is the first and
+great commandment.
+
+
+
+*Three Simple TEST to see if You Love God*
+
+
+
+=C2=B7       *If you Really Love Him =E2=80=93 You will Crave to be with Hi=
+m. *
+
+
+
+=C2=B7       *If you LOVE Him =E2=80=93 You will have a Passion to Give to =
+Him*
+
+
+
+=C2=B7       *You will have a Passion to Praise Him*
+
+
+
+*Psalm 150:6 (KJV) *
+Let every thing that hath breath praise the LORD. Praise ye the LORD.
+
+
+*Psalm 27:4 (KJV)*
+
+One thing have I desired of the LORD, that will I seek after; that I may
+dwell in the house of the LORD all the days of my life, to behold the
+beauty of the LORD, and to enquire in his temple.
+
+
+
+
+
+ *Psalm 73:25 (KJV)*
+
+Whom have I in heaven but thee? and there is none upon earth that I desire
+beside thee.
+
+
+
+*Romans 8:28 (KJV) *
+And we know that all things work together for good to them that love God,
+to them who are the called according to his purpose.
+
+
+
+*2. You are Called According to His Purpose*
+
+
+
+*II Timothy 1:9 (KJV) says:
+
+                                                          *Who hath saved
+us, and called us with an holy calling, not according to our works, but
+according to his own purpose and grace.
+
+
+
+*Romans 8:28 (KJV) *
+And we know that all things work together for good to them that love God,
+to them who are the called according to his purpose.
+
+
+--000000000000349eec065e1c2113
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div class=3D"gmail_default" style=3D"font-size:large"><p =
+class=3D"MsoNormal" align=3D"center" style=3D"text-align:center;margin:0in =
+0in 8pt;line-height:115%;font-size:14pt;font-family:Arial,sans-serif"><b><s=
+pan style=3D"font-size:18pt;line-height:115%">All Things Work Together</spa=
+n></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Romans 8:28 (KJV) </b><br>
+And we know that all things work together for good to them that love God, t=
+o
+them who are called according to his purpose.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Two Conditions to Activate Romans =
+8:28</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b><br></b></p><p class=3D"MsoNormal"=
+ style=3D"margin:0in 0in 8pt;line-height:115%;font-size:14pt;font-family:Ar=
+ial,sans-serif"><b>1. You have to LOVE God</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b><br></b></p><p class=3D"MsoNormal"=
+ style=3D"margin:0in 0in 8pt;line-height:115%;font-size:14pt;font-family:Ar=
+ial,sans-serif"><b>Matthew 22:37-38 (KJV) </b><br>
+Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, a=
+nd
+with all thy soul, and with all thy mind. <sup>38 </sup>=C2=A0This is the f=
+irst
+and great commandment.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Three Simple TEST to see if You Lo=
+ve God</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"gmail-MsoListParagraph" style=3D"margin:0in 0in 8pt 0.5in;line-=
+height:115%;font-size:14pt;font-family:Arial,sans-serif"><span style=3D"fon=
+t-family:Symbol">=C2=B7<span style=3D"font-style:normal;font-variant:normal=
+;font-size-adjust:none;font-kerning:auto;font-feature-settings:normal;font-=
+stretch:normal;font-size:7pt;line-height:normal;font-family:&quot;Times New=
+ Roman&quot;">=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 </span></span><b>If
+you Really Love Him =E2=80=93 You will Crave to be with Him. </b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:14p=
+t;font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"gmail-MsoListParagraph" style=3D"margin:0in 0in 8pt 0.5in;line-=
+height:115%;font-size:14pt;font-family:Arial,sans-serif"><span style=3D"fon=
+t-family:Symbol">=C2=B7<span style=3D"font-style:normal;font-variant:normal=
+;font-size-adjust:none;font-kerning:auto;font-feature-settings:normal;font-=
+stretch:normal;font-size:7pt;line-height:normal;font-family:&quot;Times New=
+ Roman&quot;">=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 </span></span><b>If
+you LOVE Him =E2=80=93 You will have a Passion to Give to Him</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"gmail-MsoListParagraph" style=3D"margin:0in 0in 8pt 0.5in;line-=
+height:115%;font-size:14pt;font-family:Arial,sans-serif"><span style=3D"fon=
+t-family:Symbol">=C2=B7<span style=3D"font-style:normal;font-variant:normal=
+;font-size-adjust:none;font-kerning:auto;font-feature-settings:normal;font-=
+stretch:normal;font-size:7pt;line-height:normal;font-family:&quot;Times New=
+ Roman&quot;">=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 </span></span><b>You
+will have a Passion to Praise Him</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:14p=
+t;font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Psalm 150:6 (KJV) </b><br>
+Let every thing that hath breath praise the LORD. Praise ye the LORD.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b><br></b></p><p class=3D"MsoNormal" style=
+=3D"margin:0in;line-height:115%;font-size:14pt;font-family:Arial,sans-serif=
+"><b>Psalm 27:4 (KJV)</b> </p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif">One thing have I desired of the
+LORD, that will I seek after; that I may dwell in the house of the LORD all=
+ the
+days of my life, to behold the beauty of the LORD, and to enquire in his
+temple.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b><b style=3D"font-size:14pt;backg=
+round-color:transparent">Psalm 73:25 (KJV)</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif">Whom have I in heaven but thee?
+and there is none upon earth that I desire beside thee.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Romans 8:28 (KJV) </b><br>
+And we know that all things work together for good to them that love God, t=
+o
+them who are the called according to his purpose.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>2. You are Called According to His=
+ Purpose</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>=C2=A0</b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>II Timothy 1:9 (KJV) says:=C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 </b>Who hath saved us, and called=
+ us with an holy calling, not according
+to our works, but according to his own purpose and grace.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:14pt;=
+font-family:Arial,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif"><b>Romans 8:28 (KJV) </b><br>
+And we know that all things work together for good to them that love God, t=
+o
+them who are the called according to his purpose.</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:14pt;font-family:Arial,sans-serif">=C2=A0</p></div></div>
+
+
+--000000000000349eec065e1c2113--

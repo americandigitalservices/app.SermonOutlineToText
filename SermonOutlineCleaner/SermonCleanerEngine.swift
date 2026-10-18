@@ -161,6 +161,14 @@ final class SermonCleanerEngine {
         return "(\(booksRegex))\\.?\\s*(\\d+(?:\\s*:\\s*\\d+)?(?:\\s*-\\s*\\d+)?)(?:\\s*\\(?(\(translationsRegex))\\)?)?"
     }()
 
+    // Matches standalone reference lines even if followed by "says:", "reads:", or ":"
+    static let standaloneRefPattern: String = {
+        return "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*[:;\\-]?\\s*$"
+    }()
+
+    // All bullet/list characters including middle dot (· \u{00B7}) from Word/Gmail
+    static let leadingBulletPattern = "^\\h*[•·∙‣◦⁃\\-_–—*>»▪▫~+]+\\h*"
+
     // MARK: - Regex Helpers
 
     private static func regexReplace(_ text: String, pattern: String, template: String, caseInsensitive: Bool = false) -> String {
@@ -658,8 +666,8 @@ final class SermonCleanerEngine {
                 let currClean = current.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
                 let nxtClean = nxt.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
 
-                let currIsRef = regexFirstMatch(currClean, pattern: "^\\(?\(refCorePattern)\\)?$") != nil
-                let nxtIsRef = regexFirstMatch(nxtClean, pattern: "^\\(?\(refCorePattern)\\)?$") != nil
+                let currIsRef = regexFirstMatch(currClean, pattern: standaloneRefPattern) != nil
+                let nxtIsRef = regexFirstMatch(nxtClean, pattern: standaloneRefPattern) != nil
                 let startsWithVerseNum = regexFirstMatch(nxtClean, pattern: "^\\d{1,3}\\s+[A-Z\"“]", caseInsensitive: false) != nil
 
                 if currIsRef || nxtIsRef || startsWithVerseNum {
@@ -685,7 +693,7 @@ final class SermonCleanerEngine {
 
         let genericSubjects: Set<String> = [
             "over head outline", "overhead outline", "sermon outline", "sermon notes",
-            "outline", "notes", "sunday sermon", "sunday outline", "message outline"
+            "outline", "notes", "sunday sermon", "sunday outline", "message outline", "over head", "overhead"
         ]
         let check = subj.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " .:-_"))
         return genericSubjects.contains(check) ? "" : subj
@@ -716,20 +724,58 @@ final class SermonCleanerEngine {
     static func cleanBasicTypography(_ input: String) -> String {
         if input == slideBreakMarker { return slideBreakMarker }
         var text = input
+        // 1. CotEditor rule: Strip zero-width spaces, joiners, BOM, and soft hyphens
         text = regexReplace(text, pattern: "[\\u{200B}\\u{200C}\\u{200D}\\u{FEFF}\\u{00AD}]", template: "")
+        // 2. Non-breaking spaces and tabs to normal spaces
         text = text.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\t", with: " ")
+        // 3. Smart quotes to straight quotes
         text = text.replacingOccurrences(of: "“", with: "\"").replacingOccurrences(of: "”", with: "\"")
         text = text.replacingOccurrences(of: "‘", with: "'").replacingOccurrences(of: "’", with: "'")
-        text = regexReplace(text, pattern: "^\\h*[•\\-_–—*>»▪~+]+\\h*", template: "")
+        // 4. Remove any asterisks first so "* · Text" or "· *Text" exposes the leading bullet
         text = text.replacingOccurrences(of: "*", with: "")
+        // 5. CotEditor rule: Strip leading bullets (including middle dot · \u{00B7}), hyphens, dashes, arrows, and list markers
+        text = regexReplace(text, pattern: leadingBulletPattern, template: "")
+        // 6. Strip BibleGateway footnote markers like [a], [b]
         text = regexReplace(text, pattern: "(?<!\\w)\\[[a-zA-Z]\\]\\s*", template: "")
+        // 7. Normalize number ranges with em/en dashes (e.g., 1—3 -> 1-3)
         text = regexReplace(text, pattern: "(?<=\\d)\\s*[—–]\\s*(?=\\d)", template: "-")
+        // 8. Normalize remaining em/en dashes to spaced hyphens ( - )
         text = regexReplace(text, pattern: "\\s*[—–]\\s*", template: " - ")
+        // 9. Fix missing space after sentence-ending punctuation
         text = regexReplace(text, pattern: "(?<!\\.)([.?!;])([A-Z\\[])", template: "$1 $2")
         text = regexReplace(text, pattern: "(?<!\\.)([.?!;])(\\d+\\s+[A-Z\\[\"“])", template: "$1 $2")
         text = regexReplace(text, pattern: "([a-z\\]])([A-Z])", template: "$1 $2")
+        // 10. Collapse multiple horizontal spaces
         text = regexReplace(text, pattern: "\\h{2,}", template: " ")
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Runs the exact CotEditor AppleScript regex cleanup pass on every final output line
+    static func applyFinalCotEditorCleanup(_ lines: [String]) -> [String] {
+        var cleanedLines: [String] = []
+        for rawLine in lines {
+            var line = rawLine
+            // 1. Strip zero-width spaces, joiners, BOM, soft hyphens
+            line = regexReplace(line, pattern: "[\\u{200B}\\u{200C}\\u{200D}\\u{FEFF}\\u{00AD}]", template: "")
+            // 2. Smart double and single quotes
+            line = line.replacingOccurrences(of: "“", with: "\"").replacingOccurrences(of: "”", with: "\"")
+            line = line.replacingOccurrences(of: "‘", with: "'").replacingOccurrences(of: "’", with: "'")
+            // 3. Non-breaking spaces to normal spaces
+            line = line.replacingOccurrences(of: "\u{00A0}", with: " ")
+            // 4. Leading bullets/hyphens/markers (^\h*[\•\·\-\_\–\—\*\>\»\▪\~\+]+\h*)
+            line = regexReplace(line, pattern: leadingBulletPattern, template: "")
+            // 5. Trailing colons or semicolons ((:|;)\h*$)
+            line = regexReplace(line, pattern: "[:;]\\h*$", template: "")
+            // 6. Collapse multiple horizontal spaces (\h\h+ -> " ")
+            line = regexReplace(line, pattern: "\\h{2,}", template: " ")
+            // 7. Trim leading and trailing horizontal whitespace (^\h+|\h+$)
+            line = line.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if !line.isEmpty {
+                cleanedLines.append(line)
+            }
+        }
+        return cleanedLines
     }
 
     static func cleanVerseBody(_ input: String) -> String {
@@ -751,7 +797,8 @@ final class SermonCleanerEngine {
     }
 
     static func formatTopicLine(_ input: String) -> String {
-        var text = regexReplace(input, pattern: "[:;]\\h*$", template: "").trimmingCharacters(in: .whitespaces)
+        var text = regexReplace(input, pattern: leadingBulletPattern, template: "")
+        text = regexReplace(text, pattern: "[:;]\\h*$", template: "").trimmingCharacters(in: .whitespaces)
 
         if text == text.uppercased() && text.count > 3 {
             text = text.capitalized
@@ -934,12 +981,13 @@ final class SermonCleanerEngine {
 
         for rawSeg in segments {
             var seg = rawSeg.trimmingCharacters(in: .whitespacesAndNewlines)
-            if seg.hasSuffix(";") { seg.removeLast() }
+            if seg.hasSuffix(";") || seg.hasSuffix(":") { seg.removeLast() }
             seg = regexReplace(seg, pattern: "^\\(([1-9]|1\\d)\\)\\s+", template: "")
             if seg.isEmpty { continue }
 
             for chunk in smartWrapText(seg, maxLen: availLen) {
-                finalLines.append("\(fullPrefix)\(chunk)")
+                let cleanedChunk = regexReplace(chunk, pattern: "[:;]\\h*$", template: "")
+                finalLines.append("\(fullPrefix)\(cleanedChunk)")
             }
         }
         return finalLines
@@ -1011,7 +1059,8 @@ final class SermonCleanerEngine {
 
             if ["TOPIC:", "TOPIC"].contains(line.uppercased()) { continue }
 
-            if let standalone = regexFirstMatch(line, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?$") {
+            // Standalone scripture reference line (including trailing "says:" or ":")
+            if let standalone = regexFirstMatch(line, pattern: standaloneRefPattern) {
                 let bookRaw = standalone[1]
                 let numsRaw = standalone[2]
                 var transRaw: String? = standalone[3].isEmpty ? nil : standalone[3]
@@ -1019,8 +1068,8 @@ final class SermonCleanerEngine {
                 if transRaw == nil && idx < rawLines.count {
                     let nextClean = cleanBasicTypography(rawLines[idx])
                     if nextClean != slideBreakMarker,
-                       regexFirstMatch(nextClean, pattern: "^\\(?(\(translationsRegex))\\)?$") != nil {
-                        transRaw = nextClean
+                       regexFirstMatch(nextClean, pattern: "^\\(?(\(translationsRegex))\\)?(?:\\s*(?:says|reads))?\\s*[:;]?$") != nil {
+                        transRaw = regexReplace(nextClean, pattern: "(?:\\s*(?:says|reads))?\\s*[:;]?$", template: "", caseInsensitive: true)
                         idx += 1
                     }
                 }
@@ -1055,7 +1104,7 @@ final class SermonCleanerEngine {
                     continue
                 }
 
-                if let leadMatch = regexFirstMatch(sub, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?\\s*(?:-\\s*)?(.*)$"),
+                if let leadMatch = regexFirstMatch(sub, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*(?:[:\\-]\\s*)?(.*)$"),
                    !leadMatch[4].isEmpty {
                     let bookRaw = leadMatch[1]
                     var numsRaw = leadMatch[2]
@@ -1122,11 +1171,14 @@ final class SermonCleanerEngine {
             sermonTitle = !emailSubjectFallback.isEmpty ? emailSubjectFallback : extractTitleFromFilename(url)
         }
 
+        // Run final CotEditor cleanup pass across all output lines
+        let finalCleanedLines = applyFinalCotEditorCleanup(outputLines)
         let cleanSpk = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
+
         return SermonProcessingResult(
             speaker: cleanSpk.isEmpty ? defaultSpeaker : cleanSpk,
             title: sermonTitle,
-            lines: outputLines,
+            lines: finalCleanedLines,
             scriptures: scriptureList
         )
     }
@@ -1176,6 +1228,9 @@ final class SermonCleanerEngine {
         if regexFirstMatch(line, pattern: "(?<=[.?!;:,\"\\]])\\s+\\d{1,2}\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
             return true
         }
+        if let ref = activeRef, ref.contains("-"), line.count >= 50, !line.hasSuffix(":") {
+            return true
+        }
         return false
     }
 
@@ -1190,7 +1245,7 @@ final class SermonCleanerEngine {
         stem = regexReplace(stem, pattern: "\\s*[-_]\\s*OUTLINES?\\b.*$", template: "", caseInsensitive: true)
         stem = regexReplace(stem, pattern: "\\.\\d{1,2}\\.\\d{1,2}\\.\\d{2,4}\\b.*$", template: "")
         let cleaned = stem.trimmingCharacters(in: CharacterSet(charactersIn: " ._"))
-        if ["over head outline", "overhead outline", "sermon outline", "outline"].contains(cleaned.lowercased()) {
+        if ["over head outline", "overhead outline", "sermon outline", "outline", "over head", "overhead"].contains(cleaned.lowercased()) {
             return ""
         }
         return cleaned

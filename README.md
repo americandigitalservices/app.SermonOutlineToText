@@ -1,6 +1,6 @@
 # Sermon Outline Cleaner (macOS)
 
-A native macOS app that converts sermon outlines (`.docx`, `.pdf`, `.eml`, or `.txt`) into formatted `.txt` files for ProPresenter lower thirds.
+A native macOS app that converts sermon outlines (`.docx`, `.pptx`, `.ppt`, `.pdf`, `.eml`, or `.txt`) into formatted `.txt` files for ProPresenter lower thirds.
 
 ---
 
@@ -27,24 +27,23 @@ Each time you load an outline, the app saves four files to your chosen folder (d
 
 1. **Set Your Preferences (Top Bar):**
    * **Save Location:** Click **Browse…** to choose where your `.txt` files are saved (remembered automatically between launches).
-   * **Speaker Name:** Enter the speaker's name. Check **Use .eml Sender** only if you want `.eml` email files to automatically overwrite this field with the email's `From:` name.
+   * **Speaker Name:** Leave blank to be prompted when loading a file, or type a name beforehand. If you load an `.eml` email while this field is blank, the prompt automatically pre-fills the email's `From:` sender name.
    * **Column Limit:** Set the maximum characters per line (`45`–`250`, default `105`). Changing this value with a file loaded immediately re-wraps the text.
 
 2. **Load an Outline:**
-   * Drag and drop a `.docx`, `.pdf`,`.pptx`, `.eml`, or `.txt` file into the drop zone (or onto the app's Dock icon), or click **Select Outline…**.
+   * Drag and drop a `.docx`, `.pptx`, `.pdf`, `.eml`, or `.txt` file from Finder—or drag an email/attachment directly out of **Apple Mail**—into the drop zone, or click **Select Outline…**.
+   * If an email contains attachments, a dialog lets you choose between parsing any attachment or the email body text.
 
-3. **Review or Edit Previews:**
-   * Inspect all four generated files directly in the 2x2 preview grid.
-   * You can type or make quick changes inside any preview box and click **Save Edits** (or **Sync Preview Edits to Disk**) to update the files on disk.
-
-4. **Import to ProPresenter:**
+3. **Review Previews & Import to ProPresenter:**
+   * Inspect all four generated files in the read-only 2x2 preview grid.
    * Click **Import to ProPresenter** to launch/focus ProPresenter and automatically import the generated `SermonText-<Title>-<Speaker>.txt` file.
 
 ---
 
-## First-Time macOS Permission Note
+## First-Time macOS Permissions
 
-To use the **Import to ProPresenter** button, macOS requires **Accessibility** permission so the app can trigger ProPresenter's file import shortcut:
+To use the **Import to ProPresenter** button, macOS requires **Accessibility** and **Automation** permissions:
 
-1. The first time you click **Import to ProPresenter**, macOS will prompt you to grant access.
-2. Open **System Settings > Privacy & Security > Accessibility** and toggle **SermonOutlineCleaner** ON.
+1. **Accessibility:** The first time you click **Import to ProPresenter**, open **System Settings > Privacy & Security > Accessibility** and toggle **SermonOutlineCleaner** ON.
+2. **Automation:** When macOS displays the prompt stating *"SermonOutlineCleaner needs permission to launch ProPresenter and trigger the file import menu"*, click **Allow**.
+3. **Resetting Permissions:** If Automation permission was accidentally denied, choose **SermonOutlineCleaner > Reset Permissions** from the top menu bar (or click **Reset Permissions** in the warning dialog) and click **Import to ProPresenter** again.
