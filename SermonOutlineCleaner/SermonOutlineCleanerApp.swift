@@ -1,5 +1,11 @@
 import SwiftUI
 
+//
+//  SermonOutlineCleaner
+//  Copyright (C) 2026 Daniel Horning
+//  Licensed under the GNU General Public License v3.0 (GPL-3.0)
+//
+
 extension Notification.Name {
     static let resetAppPermissions = Notification.Name("resetAppPermissions")
 }
