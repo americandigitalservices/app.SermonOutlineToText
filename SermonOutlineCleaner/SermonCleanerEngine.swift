@@ -28,8 +28,11 @@ struct EmlInspection {
 }
 
 final class SermonCleanerEngine {
+    
     static let defaultMaxLineChars = 105
-    static let defaultSpeaker = "Pastor Ernest Fink"
+    
+    static let defaultSpeaker = "Pastor John"
+    
     static let slideBreakMarker = "__SLIDE_BREAK__"
     
     static let danglingEndWords: Set<String> = [
@@ -848,6 +851,7 @@ final class SermonCleanerEngine {
     }
     
     /// Runs the exact CotEditor AppleScript regex cleanup pass on every final output line
+    
     static func applyFinalCotEditorCleanup(_ lines: [String]) -> [String] {
         var cleanedLines: [String] = []
         for rawLine in lines {

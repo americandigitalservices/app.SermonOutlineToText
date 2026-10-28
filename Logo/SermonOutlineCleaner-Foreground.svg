@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Document Paper Gradient (Dissolves diagonally) -->
+    <linearGradient id="fgPaperGrad" x1="0%" y1="0%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="55%" stop-color="#E2E8F0" />
+      <stop offset="85%" stop-color="#94A3B8" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#64748B" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="fgAccentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+
+    <linearGradient id="fgGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Top-Left Dissolving Raw Text Document -->
+  <g id="RawDocumentLayer">
+    <path d="M 190 160
+             H 520
+             L 620 260
+             V 490
+             C 620 555, 530 605, 430 640
+             C 330 675, 250 700, 190 700
+             Z" fill="url(#fgPaperGrad)" />
+
+    <!-- Folded Corner -->
+    <path d="M 520 160 V 236 C 520 249, 531 260, 544 260 H 620 Z" fill="#CBD5E1" />
+
+    <!-- Raw Unformatted Text Lines & Bullets -->
+    <circle cx="246" cy="250" r="11" fill="#475569" />
+    <rect x="276" y="239" width="195" height="22" rx="11" fill="#334155" />
+
+    <circle cx="246" cy="304" r="11" fill="#64748B" />
+    <rect x="276" y="293" width="275" height="22" rx="11" fill="#475569" />
+    <rect x="246" y="332" width="230" height="18" rx="9" fill="#64748B" />
+
+    <!-- Fragmenting / Dissolving Lines -->
+    <circle cx="246" cy="386" r="10" fill="#94A3B8" />
+    <rect x="276" y="376" width="145" height="18" rx="9" fill="#64748B" />
+    <rect x="438" y="376" width="72" height="18" rx="9" fill="#94A3B8" opacity="0.75" />
+    <rect x="526" y="376" width="38" height="18" rx="9" fill="#38BDF8" opacity="0.7" />
+
+    <!-- Dissolving Particles -->
+    <rect x="246" y="430" width="92" height="16" rx="8" fill="#94A3B8" opacity="0.6" />
+    <rect x="358" y="430" width="54" height="16" rx="8" fill="#38BDF8" opacity="0.8" />
+    <circle cx="438" cy="438" r="9" fill="#38BDF8" />
+    <circle cx="478" cy="428" r="7" fill="#F59E0B" />
+    <circle cx="525" cy="445" r="10" fill="#6366F1" opacity="0.85" />
+    <circle cx="575" cy="422" r="7" fill="#38BDF8" opacity="0.7" />
+  </g>
+
+  <!-- 2. Bottom-Right Clean Structured Outline -->
+  <g id="CleanOutlineLayer">
+    <rect x="290" y="485" width="545" height="355" rx="40" ry="40" fill="#0F172A" stroke="url(#fgAccentGrad)" stroke-width="8" />
+
+    <!-- Scripture Pill + Sermon Title -->
+    <rect x="338" y="536" width="126" height="36" rx="18" fill="url(#fgGoldGrad)" />
+    <rect x="484" y="540" width="300" height="28" rx="14" fill="#FFFFFF" />
+
+    <!-- Main Point 1 -->
+    <rect x="338" y="608" width="34" height="34" rx="10" fill="url(#fgAccentGrad)" />
+    <rect x="394" y="612" width="355" height="26" rx="13" fill="#F8FAFC" />
+
+    <!-- Sub-Point 1a -->
+    <rect x="394" y="662" width="28" height="14" rx="7" fill="#38BDF8" />
+    <rect x="438" y="658" width="270" height="22" rx="11" fill="#94A3B8" />
+
+    <!-- Main Point 2 -->
+    <rect x="338" y="710" width="34" height="34" rx="10" fill="url(#fgAccentGrad)" />
+    <rect x="394" y="714" width="390" height="26" rx="13" fill="#F8FAFC" />
+
+    <!-- Sub-Point 2a -->
+    <rect x="394" y="764" width="28" height="14" rx="7" fill="#38BDF8" />
+    <rect x="438" y="760" width="230" height="22" rx="11" fill="#94A3B8" />
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+create-dmg \
+  --volname "Sermon Outline Cleaner" \
+  --window-pos 200 120 \
+  --window-size 600 400 \
+  --icon-size 100 \
+  --icon "SermonOutlineCleaner.app" 175 190 \
+  --hide-extension "SermonOutlineCleaner.app" \
+  --app-drop-link 425 190 \
+  "SermonOutlineCleaner-Installer.dmg" \
+  "SermonOutlineCleaner.app"
+
+xcrun notarytool store-credentials "notary-profile" \
+  --apple-id "dsoundmn@gmail.com" \
+  --team-id "9ZXF22A8H2"
+
+xcrun notarytool submit "SermonOutlineCleaner-Installer.dmg" \
+  --keychain-profile "notary-profile" \
+  --wait
+
+xcrun stapler staple "SermonOutlineCleaner-Installer.dmg"
