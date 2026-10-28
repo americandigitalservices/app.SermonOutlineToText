@@ -150,10 +150,15 @@ nonisolated final class SermonCleanerEngine: Sendable {
         "new king james version": "NKJV",
         "nkjv": "NKJV",
         "king james version": "KJV",
+        "kjv 1900": "KJV",
         "kjv": "KJV",
         "new international version": "NIV",
+        "niv 1984": "NIV",
+        "niv 2011": "NIV",
         "niv": "NIV",
         "new american standard bible": "NASB",
+        "nasb 1995": "NASB",
+        "nasb 2020": "NASB",
         "nasb": "NASB",
         "christian standard bible": "CSB",
         "csb": "CSB",
@@ -177,16 +182,18 @@ nonisolated final class SermonCleanerEngine: Sendable {
     static let translationsRegex: String = {
         let sortedKeys = translationMap.keys.sorted { $0.count > $1.count }
         let patterns = sortedKeys.map { NSRegularExpression.escapedPattern(for: $0) }
-        return "(?:" + patterns.joined(separator: "|") + ")"
+        return "(?:" + patterns.joined(separator: "|") + ")(?:\\s+\\d{4})?"
     }()
 
+    static let chapterVersePattern = "\\d+\\s*:\\s*\\d+(?:\\s*[-,]\\s*\\d+)*"
+
     static let refCorePattern: String = {
-        return "(\(booksRegex))\\.?\\s*(\\d+(?:\\s*:\\s*\\d+)?(?:\\s*-\\s*\\d+)?)(?:\\s*\\(?(\(translationsRegex))\\)?)?"
+        return "(\(booksRegex))\\.?\\s*(\(chapterVersePattern))(?:\\s*\\(?(\(translationsRegex))\\)?)?"
     }()
 
     // Matches standalone reference lines even if followed by "says:", "reads:", or ":"
     static let standaloneRefPattern: String = {
-        return "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*[:;\\-]?\\s*$"
+        return "^\\(?(\(booksRegex))\\.?\\s*(\(chapterVersePattern)|\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*[:;\\-]?\\s*$"
     }()
 
     // All bullet/list characters including middle dot (· \u{00B7}) from Word/Gmail
@@ -249,7 +256,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
     }
 
     private static func splitInlineParenRefs(_ line: String) -> [String] {
-        let pattern = "(?=\\(\(booksRegex)\\.?\\s*\\d+:\\s*\\d+(?:-\\d+)?\\s+\(translationsRegex)\\))"
+        let pattern = "(?=\\(\(booksRegex)\\.?\\s*\(chapterVersePattern)\\s+\(translationsRegex)\\))"
         let marked = regexReplace(line, pattern: pattern, template: "\u{0000}", caseInsensitive: true)
         let parts = marked.components(separatedBy: "\u{0000}")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -264,8 +271,8 @@ nonisolated final class SermonCleanerEngine: Sendable {
         "OT", "NT", "KJV", "NKJV", "ESV", "NIV", "NLT", "NASB", "CSB", "AMP", "AMPC"
     ]
 
-    /// Formats a title or heading in Title Case while preserving contractions (e.g. "God's")
-    /// and Roman numerals/acronyms (e.g. "Part II").
+    /// Formats a title or heading in Title Case while preserving contractions (e.g. "God's"),
+    /// dotted acronyms (e.g. "L.I.S.T.E.N."), and Roman numerals/acronyms (e.g. "Part II").
     static func smartTitleCase(_ input: String) -> String {
         let words = input.split(separator: " ", omittingEmptySubsequences: true)
         guard !words.isEmpty else { return "" }
@@ -274,6 +281,10 @@ nonisolated final class SermonCleanerEngine: Sendable {
             let rawWord = String(wordSub)
             let strippedPunct = rawWord.trimmingCharacters(in: .punctuationCharacters).uppercased()
             if preservedUppercaseTokens.contains(strippedPunct) {
+                return rawWord.uppercased()
+            }
+            // Preserve dotted acronyms such as "L.I.S.T.E.N." or "U.S.A."
+            if regexFirstMatch(rawWord, pattern: "^(?:[A-Za-z]\\.){2,}[A-Za-z]?\\.?$", caseInsensitive: false) != nil {
                 return rawWord.uppercased()
             }
             // Capitalize the first letter of each hyphenated segment while lowercasing the rest
@@ -308,13 +319,17 @@ nonisolated final class SermonCleanerEngine: Sendable {
             .replacingOccurrences(of: "’", with: "'")
             .lowercased()
         let singleSpaced = regexReplace(cleaned, pattern: "\\s+", template: " ")
-        return translationMap[singleSpaced] ?? raw.uppercased().trimmingCharacters(in: CharacterSet(charactersIn: "() "))
+        let withoutYear = regexReplace(singleSpaced, pattern: "\\s+\\d{4}$", template: "")
+        return translationMap[singleSpaced]
+            ?? translationMap[withoutYear]
+            ?? withoutYear.uppercased().trimmingCharacters(in: CharacterSet(charactersIn: "() "))
     }
 
     static func normalizeBookAndNumbers(_ bookRaw: String, _ numbersRaw: String) -> String {
         let canonicalBook = getCanonicalBook(bookRaw)
         var cleanNums = regexReplace(numbersRaw.trimmingCharacters(in: .whitespaces), pattern: "\\s*:\\s*", template: ":")
         cleanNums = regexReplace(cleanNums, pattern: "\\s*-\\s*", template: "-")
+        cleanNums = regexReplace(cleanNums, pattern: "\\s*,\\s*", template: ",")
         return "\(canonicalBook) \(cleanNums)"
     }
 
@@ -450,7 +465,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
             let rawPartHeader = subParts[0]
             let unfoldedPartHeader = decodeRFC2047Words(regexReplace(rawPartHeader, pattern: "\\n[ \\t]+", template: " "))
 
-            let filenameMatch = regexFirstMatch(unfoldedPartHeader, pattern: "(?:filename|name)\\*?=\"?([^\"\\r\\n;]+)\"?")
+            let filenameMatch = regexFirstMatch(unfoldedPartHeader, pattern: "(?:filename|name)\\*?=\\\"?([^\\\"\\r\\n;]+)\\\"?")
             guard var filename = filenameMatch?[1].trimmingCharacters(in: CharacterSet(charactersIn: " \"';")) else {
                 continue
             }
@@ -549,12 +564,12 @@ nonisolated final class SermonCleanerEngine: Sendable {
         var name = raw.components(separatedBy: ";").first ?? raw
         name = name.trimmingCharacters(in: CharacterSet(charactersIn: " \t\r\n\"'"))
 
-        // Ignore generic/system placeholder author names
+        // Ignore generic/system placeholder author names or raw email addresses
         let ignoredAuthors: Set<String> = [
             "microsoft office user", "windows user", "user", "admin", "administrator",
             "owner", "preferred customer", "authorized user", "default"
         ]
-        if name.isEmpty || ignoredAuthors.contains(name.lowercased()) {
+        if name.isEmpty || name.contains("@") || ignoredAuthors.contains(name.lowercased()) {
             return nil
         }
 
@@ -589,36 +604,91 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
         if ext == "docx" {
             let attrStr = try NSAttributedString(url: url, options: [:], documentAttributes: nil)
-            let normalized = attrStr.string.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+            let normalized = attrStr.string
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .replacingOccurrences(of: "\r", with: "\n")
             for line in normalized.components(separatedBy: "\n") {
-                let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                let s = line
+                    .replacingOccurrences(of: "\u{2028}", with: " ")
+                    .replacingOccurrences(of: "\u{2029}", with: " ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
                 if !s.isEmpty { rawLines.append(s) }
             }
         } else if ext == "pdf" {
             guard let pdf = PDFDocument(url: url) else {
                 throw SermonCleanerError.unreadablePDF(url)
             }
+            var pdfPageLines: [String] = []
             for i in 0..<pdf.pageCount {
                 if let pageText = pdf.page(at: i)?.string {
-                    let normalized = pageText.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+                    let normalized = pageText
+                        .replacingOccurrences(of: "\r\n", with: "\n")
+                        .replacingOccurrences(of: "\r", with: "\n")
                     for line in normalized.components(separatedBy: "\n") {
-                        let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !s.isEmpty { rawLines.append(s) }
+                        let s = line
+                            .replacingOccurrences(of: "\u{2028}", with: " ")
+                            .replacingOccurrences(of: "\u{2029}", with: " ")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !s.isEmpty { pdfPageLines.append(s) }
                     }
                 }
             }
+            rawLines = reflowPdfLines(pdfPageLines)
         } else if ext == "pptx" || ext == "ppt" {
             rawLines = try extractLinesFromPowerPoint(url)
         } else {
             let text = try String(contentsOf: url, encoding: .utf8)
-            let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+            let normalized = text
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .replacingOccurrences(of: "\r", with: "\n")
             for line in normalized.components(separatedBy: "\n") {
-                let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                let s = line
+                    .replacingOccurrences(of: "\u{2028}", with: " ")
+                    .replacingOccurrences(of: "\u{2029}", with: " ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
                 if !s.isEmpty { rawLines.append(s) }
             }
         }
 
         return mergeOrphanVerseNumberLines(rawLines)
+    }
+
+    /// Joins hard-wrapped PDF lines that were broken mid-sentence or mid-quote by PDF column layout.
+    private static func reflowPdfLines(_ lines: [String]) -> [String] {
+        guard !lines.isEmpty else { return [] }
+        var result: [String] = []
+        for rawLine in lines {
+            let trimmed = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            guard let prev = result.last else {
+                result.append(trimmed)
+                continue
+            }
+            let prevClean = cleanBasicTypography(prev)
+            let currClean = cleanBasicTypography(trimmed)
+
+            let prevIsStandaloneRef = regexFirstMatch(prevClean, pattern: standaloneRefPattern) != nil
+            let currIsStandaloneRef = regexFirstMatch(currClean, pattern: standaloneRefPattern) != nil
+            let currStartsWithRef = regexFirstMatch(currClean, pattern: "^\\(?(\(booksRegex))\\.?\\s*\(chapterVersePattern)") != nil
+            let currIsOutlineHeading = regexFirstMatch(currClean, pattern: "^(?:[IVX]{1,4}|[A-Z]|\\d{1,2})[.)]\\s+", caseInsensitive: false) != nil
+            let currStartsWithBullet = regexFirstMatch(trimmed, pattern: leadingBulletPattern) != nil
+
+            if prevIsStandaloneRef || currIsStandaloneRef || currStartsWithRef || currIsOutlineHeading || currStartsWithBullet {
+                result.append(trimmed)
+                continue
+            }
+
+            let prevQuoteCount = prevClean.filter { $0 == "\"" }.count
+            let hasUnclosedQuote = (prevQuoteCount % 2 == 1)
+            let endsWithTerminalPunct = regexFirstMatch(prevClean, pattern: "[.?!][\"')\\]]*$") != nil
+
+            if hasUnclosedQuote || !endsWithTerminalPunct {
+                result[result.count - 1] = "\(prev) \(trimmed)"
+            } else {
+                result.append(trimmed)
+            }
+        }
+        return result
     }
 
     static func extractLinesFromPowerPoint(_ url: URL) throws -> [String] {
@@ -905,8 +975,12 @@ nonisolated final class SermonCleanerEngine: Sendable {
         var text = input
         // 1. CotEditor rule: Strip zero-width spaces, joiners, BOM, and soft hyphens
         text = regexReplace(text, pattern: "[\\u{200B}\\u{200C}\\u{200D}\\u{FEFF}\\u{00AD}]", template: "")
-        // 2. Non-breaking spaces and tabs to normal spaces
-        text = text.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\t", with: " ")
+        // 2. Non-breaking spaces, Unicode line/paragraph separators, and tabs to normal spaces
+        text = text
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+            .replacingOccurrences(of: "\u{2028}", with: " ")
+            .replacingOccurrences(of: "\u{2029}", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
         // 3. Smart quotes to straight quotes
         text = text.replacingOccurrences(of: "“", with: "\"").replacingOccurrences(of: "”", with: "\"")
         text = text.replacingOccurrences(of: "‘", with: "'").replacingOccurrences(of: "’", with: "'")
@@ -914,15 +988,16 @@ nonisolated final class SermonCleanerEngine: Sendable {
         text = text.replacingOccurrences(of: "*", with: "")
         // 5. CotEditor rule: Strip leading bullets (including middle dot · \u{00B7}), hyphens, dashes, arrows, and list markers
         text = regexReplace(text, pattern: leadingBulletPattern, template: "")
-        // 6. Strip BibleGateway footnote markers like [a], [b]
-        text = regexReplace(text, pattern: "(?<!\\w)\\[[a-zA-Z]\\]\\s*", template: "")
+        // 6. Strip BibleGateway footnote markers like [a], [b] (even when attached to words like way[b] or commas like land,[c])
+        text = regexReplace(text, pattern: "\\[[a-zA-Z]\\]", template: "")
         // 7. Normalize number ranges with em/en dashes (e.g., 1—3 -> 1-3)
         text = regexReplace(text, pattern: "(?<=\\d)\\s*[—–]\\s*(?=\\d)", template: "-")
         // 8. Normalize remaining em/en dashes to spaced hyphens ( - )
         text = regexReplace(text, pattern: "\\s*[—–]\\s*", template: " - ")
-        // 9. Fix missing space after sentence-ending punctuation
-        text = regexReplace(text, pattern: "(?<!\\.)([.?!;])([A-Z\\[])", template: "$1 $2")
-        text = regexReplace(text, pattern: "(?<!\\.)([.?!;])(\\d+\\s+[A-Z\\[\"“])", template: "$1 $2")
+        // 9. Fix missing space after sentence-ending punctuation while preserving dotted acronyms (e.g. L.I.S.T.E.N.)
+        text = regexReplace(text, pattern: "(?<!\\.)(?<!\\b[A-Z])\\.([A-Z\\[])", template: ". $1")
+        text = regexReplace(text, pattern: "([?!;])([A-Z\\[])", template: "$1 $2")
+        text = regexReplace(text, pattern: "(?<!\\.)([.?!;][\"')\\]]*)(\\d+\\s+[A-Z\\[\"])", template: "$1 $2")
         text = regexReplace(text, pattern: "([a-z\\]])([A-Z])", template: "$1 $2")
         // 10. Collapse multiple horizontal spaces
         text = regexReplace(text, pattern: "\\h{2,}", template: " ")
@@ -959,18 +1034,18 @@ nonisolated final class SermonCleanerEngine: Sendable {
     }
 
     static func cleanVerseBody(_ input: String) -> String {
-        var body = regexReplace(input, pattern: "(?<=[.?!;:,\"\\]])\\s+(\\d{1,3})\\s+(?=[A-Z\\[\"“])", template: " ($1) ")
-        body = regexReplace(body, pattern: "^\\d{1,3}\\s+(?=[A-Z\\[\"“])", template: "")
+        var body = regexReplace(input, pattern: "(?<=[.?!;:,\"\\]])\\s+(\\d{1,3})[.)]?\\s+(?=[A-Z\\[\"“])", template: " ($1) ")
+        body = regexReplace(body, pattern: "^\\d{1,3}[.)]?\\s+(?=[A-Z\\[\"“])", template: "")
         body = body.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let quoteCount = body.filter { $0 == "\"" }.count
         if quoteCount == 1 {
             if body.hasSuffix("\"") && !body.hasPrefix("\"") {
                 body = String(body.dropLast()).trimmingCharacters(in: .whitespaces)
-            } else if !body.hasSuffix("\"") {
+            } else if !body.hasSuffix("\""), regexFirstMatch(body, pattern: "[.?!]$") != nil {
                 body += "\""
             }
-        } else if quoteCount % 2 == 1 && !body.hasSuffix("\"") {
+        } else if quoteCount % 2 == 1 && !body.hasSuffix("\""), regexFirstMatch(body, pattern: "[.?!]$") != nil {
             body += "\""
         }
         return body
@@ -1218,6 +1293,9 @@ nonisolated final class SermonCleanerEngine: Sendable {
     ) throws -> SermonProcessingResult {
         let clampedLimit = max(45, min(250, maxLineChars))
         let rawLines = try extractLines(from: url)
+        let cleanSpk = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
+        let effectiveSpeaker = cleanSpk.isEmpty ? defaultSpeaker : cleanSpk
+
         var sermonTitle = ""
         var emailSubjectFallback = fallbackTitle ?? ""
         var outputLines: [String] = []
@@ -1225,17 +1303,20 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
         var activeHeaderRef: String? = nil
         var activeHeaderHasVerse = false
+        var prevVerseContinues = false
         var seenFirstContentLine = false
 
         var idx = 0
         while idx < rawLines.count {
-            let line = cleanBasicTypography(rawLines[idx])
+            let rawLine = rawLines[idx]
+            let line = cleanBasicTypography(rawLine)
             idx += 1
             if line.isEmpty { continue }
 
             if line == slideBreakMarker {
                 activeHeaderRef = nil
                 activeHeaderHasVerse = false
+                prevVerseContinues = false
                 continue
             }
 
@@ -1265,12 +1346,18 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
             if !seenFirstContentLine {
                 seenFirstContentLine = true
-                if sermonTitle.isEmpty && line.count < 65 {
+                let isOutlinePoint = regexFirstMatch(line, pattern: "^(?:[IVX]{1,4}|[A-Z]|\\d{1,2})[.)]\\s+", caseInsensitive: false) != nil
+                if sermonTitle.isEmpty && line.count < 65 && !isOutlinePoint {
                     if regexFirstMatch(line, pattern: refCorePattern) == nil && !line.hasSuffix(":") {
                         sermonTitle = smartTitleCase(line)
                         continue
                     }
                 }
+            }
+
+            // Skip speaker byline at the top of the outline (e.g. "Sarah Y Masih" right under the sermon title)
+            if outputLines.isEmpty && isSpeakerByline(line, speaker: effectiveSpeaker) {
+                continue
             }
 
             if ["TOPIC:", "TOPIC"].contains(line.uppercased()) { continue }
@@ -1293,18 +1380,31 @@ nonisolated final class SermonCleanerEngine: Sendable {
                 let formattedRef = formatRefPrefix(bookRaw, numsRaw, transRaw)
                 activeHeaderRef = formattedRef
                 activeHeaderHasVerse = false
+                prevVerseContinues = false
                 addScriptureRef(&scriptureList, formattedRef)
                 continue
             }
 
             if let activeRef = activeHeaderRef {
-                if isVerseContinuation(line, hasSeenVerse: activeHeaderHasVerse, activeRef: activeRef) {
+                if isVerseContinuation(
+                    line,
+                    hasSeenVerse: activeHeaderHasVerse,
+                    activeRef: activeRef,
+                    prevLineContinues: prevVerseContinues
+                ) {
                     outputLines.append(contentsOf: splitLongVerse(refPrefix: activeRef, body: line, maxTotalLen: clampedLimit))
                     activeHeaderHasVerse = true
+                    let trimmedRaw = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+                    prevVerseContinues = regexFirstMatch(trimmedRaw, pattern: "[,;:]$") != nil
+                    if !prevVerseContinues && lineContainsEndVerse(line, activeRef: activeRef) {
+                        activeHeaderRef = nil
+                        activeHeaderHasVerse = false
+                    }
                     continue
                 } else {
                     activeHeaderRef = nil
                     activeHeaderHasVerse = false
+                    prevVerseContinues = false
                 }
             }
 
@@ -1320,7 +1420,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
                     continue
                 }
 
-                if let leadMatch = regexFirstMatch(sub, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\\d+\\s*:\\s*\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*(?:[:\\-]\\s*)?(.*)$"),
+                if let leadMatch = regexFirstMatch(sub, pattern: "^\\(?(\(booksRegex))\\.?\\s*(\(chapterVersePattern))\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*(?:[:\\-]\\s*)?(.*)$"),
                    !leadMatch[4].isEmpty {
                     let bookRaw = leadMatch[1]
                     var numsRaw = leadMatch[2]
@@ -1352,11 +1452,11 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
                 let multiRefMatch = regexFirstMatch(
                     formattedTopic,
-                    pattern: "^(\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?(?:\\s*;\\s*\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?)+)"
+                    pattern: "^(\(booksRegex)\\s+\(chapterVersePattern)(?:\\s*;\\s*\(booksRegex)\\s+\(chapterVersePattern))+)"
                 )
                 let inlineCite = regexFirstMatch(
                     formattedTopic,
-                    pattern: "\\((\(booksRegex)\\s+\\d+:\\d+(?:-\\d+)?)\\)\\s+[A-Z\"]"
+                    pattern: "\\((\(booksRegex)\\s+\(chapterVersePattern))\\)\\s+[A-Z\"]"
                 )
 
                 outputLines.append(contentsOf: splitPlainLine(formattedTopic, maxLen: clampedLimit))
@@ -1389,14 +1489,64 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
         // Run final CotEditor cleanup pass across all output lines
         let finalCleanedLines = applyFinalCotEditorCleanup(outputLines)
-        let cleanSpk = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return SermonProcessingResult(
-            speaker: cleanSpk.isEmpty ? defaultSpeaker : cleanSpk,
+            speaker: effectiveSpeaker,
             title: sermonTitle,
             lines: finalCleanedLines,
             scriptures: scriptureList
         )
+    }
+
+    private static func isSpeakerByline(_ line: String, speaker: String) -> Bool {
+        var cleaned = regexReplace(line, pattern: "^(?:by|speaker|pastor|rev\\.?|reverend|minister|dr\\.?)\\s*:?\\s+", template: "", caseInsensitive: true)
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, cleaned.count <= 40 else { return false }
+
+        if cleaned.lowercased() == speaker.lowercased() {
+            return true
+        }
+
+        // Match when speaker is "First Last" and byline is "First M. Last" (e.g. "Sarah Masih" vs "Sarah Y Masih")
+        let speakerTokens = speaker.lowercased().split(separator: " ").map(String.init)
+        let lineTokens = cleaned.lowercased().replacingOccurrences(of: ".", with: "").split(separator: " ").map(String.init)
+        if speakerTokens.count >= 2,
+           lineTokens.count >= 2 && lineTokens.count <= 4,
+           lineTokens.allSatisfy({ $0.allSatisfy(\.isLetter) }),
+           lineTokens.first == speakerTokens.first,
+           lineTokens.last == speakerTokens.last {
+            return true
+        }
+        return false
+    }
+
+    private static func verseNumbersInReference(_ ref: String?) -> Set<Int> {
+        guard let ref, let colonIdx = ref.firstIndex(of: ":") else { return [] }
+        let afterColon = ref[ref.index(after: colonIdx)...]
+        let verseSpec = afterColon.split(separator: "(").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
+        var numbers = Set<Int>()
+        for part in verseSpec.split(separator: ",") {
+            let trimmed = part.trimmingCharacters(in: .whitespaces)
+            if trimmed.contains("-") {
+                let bounds = trimmed.split(separator: "-").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+                if bounds.count == 2, bounds[0] <= bounds[1], bounds[1] - bounds[0] <= 200 {
+                    for n in bounds[0]...bounds[1] {
+                        numbers.insert(n)
+                    }
+                }
+            } else if let n = Int(trimmed) {
+                numbers.insert(n)
+            }
+        }
+        return numbers
+    }
+
+    private static func lineContainsEndVerse(_ line: String, activeRef: String) -> Bool {
+        let verses = verseNumbersInReference(activeRef)
+        guard verses.count >= 2, let maxVerse = verses.max() else { return false }
+        let pattern = "(?:^|(?<=[.?!;:,\"\\]])\\s+)\(maxVerse)[.)]?\\s+[A-Z\\[\"“]"
+        return regexFirstMatch(line, pattern: pattern, caseInsensitive: false) != nil
+            && regexFirstMatch(line, pattern: "[.?!][\"')\\]]*$") != nil
     }
 
     private static func mergeWithPreviousStandaloneRef(
@@ -1428,11 +1578,26 @@ nonisolated final class SermonCleanerEngine: Sendable {
         return (numsRaw, leadTrans)
     }
 
-    private static func isVerseContinuation(_ line: String, hasSeenVerse: Bool, activeRef: String? = nil) -> Bool {
-        if regexFirstMatch(line, pattern: "^\\d{1,3}[.)]\\s+", caseInsensitive: false) != nil {
+    private static func isVerseContinuation(
+        _ line: String,
+        hasSeenVerse: Bool,
+        activeRef: String? = nil,
+        prevLineContinues: Bool = false
+    ) -> Bool {
+        if let numbered = regexFirstMatch(line, pattern: "^(\\d{1,3})[.)]\\s+(.*)$", caseInsensitive: false) {
+            if let num = Int(numbered[1]),
+               verseNumbersInReference(activeRef).contains(num) {
+                let remainder = numbered[2].trimmingCharacters(in: .whitespaces)
+                if remainder != remainder.uppercased() {
+                    return true
+                }
+            }
             return false
         }
         if regexFirstMatch(line, pattern: "^(?:The\\s+Hebrew|The\\s+Greek|In\\s+[A-Z]|Key\\s+|This\\s+implies|The\\s+scripture|The\\s+verse|Know\\b)\\b", caseInsensitive: false) != nil {
+            return false
+        }
+        if regexFirstMatch(line, pattern: "\\bStrong's\\b|\\b(?:Greek|Hebrew)\\s*#?\\d+", caseInsensitive: true) != nil {
             return false
         }
         if regexFirstMatch(line, pattern: "^\\d{1,3}\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
@@ -1441,16 +1606,26 @@ nonisolated final class SermonCleanerEngine: Sendable {
         if !hasSeenVerse && !line.hasSuffix(":") {
             return true
         }
-        if regexFirstMatch(line, pattern: "(?<=[.?!;:,\"\\]])\\s+\\d{1,2}\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
+        if prevLineContinues {
             return true
         }
-        if let ref = activeRef, ref.contains("-"), line.count >= 50, !line.hasSuffix(":") {
+        if regexFirstMatch(line, pattern: "(?<=[.?!;:,\"\\]])\\s+\\d{1,2}[.)]?\\s+[A-Z\\[\"“]", caseInsensitive: false) != nil {
             return true
+        }
+        if let ref = activeRef {
+            if (ref.contains("-") || !ref.contains(":")),
+               regexFirstMatch(line, pattern: "^(?:And|But|For|Nor|Or|Yet|When|While|Who|Whom|Whose|Which|That|To|Lest|Because|How\\s+long|I\\s+(?:have|will|am|keep)|You\\s+(?:are|have|will))\\b", caseInsensitive: false) != nil,
+               !line.hasSuffix(":") {
+                return true
+            }
+            if ref.contains("-"), line.count >= 50, !line.hasSuffix(":") {
+                return true
+            }
         }
         return false
     }
 
-    private static func extractTitleFromFilename(_ url: URL) -> String {
+    static func extractTitleFromFilename(_ url: URL) -> String {
         var stem = url.lastPathComponent
         for ext in [".eml.txt", ".eml", ".docx", ".pptx", ".ppt", ".pdf", ".txt"] {
             if stem.lowercased().hasSuffix(ext) {
@@ -1458,13 +1633,25 @@ nonisolated final class SermonCleanerEngine: Sendable {
                 break
             }
         }
+        stem = regexReplace(stem, pattern: "\\s*\\([^)]*\\)", template: "")
         stem = regexReplace(stem, pattern: "\\s*[-_]\\s*OUTLINES?\\b.*$", template: "", caseInsensitive: true)
-        stem = regexReplace(stem, pattern: "\\.\\d{1,2}\\.\\d{1,2}\\.\\d{2,4}\\b.*$", template: "")
+        stem = regexReplace(stem, pattern: "[_.\\s-]+\\d{1,2}[._-]\\d{1,2}[._-]\\d{2,4}\\b.*$", template: "")
+        if stem.contains(" - ") {
+            let parts = stem.components(separatedBy: " - ").map { $0.trimmingCharacters(in: .whitespaces) }
+            let filtered = parts.filter { part in
+                regexFirstMatch(part, pattern: "^(?:outlines?|sermon.*notes.*)$", caseInsensitive: true) == nil
+            }
+            if let last = filtered.last, !last.isEmpty {
+                stem = last
+            }
+        }
+        stem = stem.replacingOccurrences(of: "_", with: " ")
+        stem = regexReplace(stem, pattern: "\\s{2,}", template: " ")
         let cleaned = stem.trimmingCharacters(in: CharacterSet(charactersIn: " ._"))
         if ["over head outline", "overhead outline", "sermon outline", "outline", "over head", "overhead"].contains(cleaned.lowercased()) {
             return ""
         }
-        return cleaned
+        return smartTitleCase(cleaned)
     }
 
     static func cleanEmailSender(_ line: String) -> String? {
