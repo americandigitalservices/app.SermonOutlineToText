@@ -4,6 +4,25 @@ import Testing
 
 struct SermonOutlineCleanerTests {
 
+    private static var testFilesDirectory: URL {
+        URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appending(path: "TestFiles", directoryHint: .isDirectory)
+    }
+
+    static func allTestFileURLs() -> [URL] {
+        let dir = testFilesDirectory
+        guard let urls = try? FileManager.default.contentsOfDirectory(
+            at: dir,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+        return urls.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
     @Test("Smart title case preserves contractions and Roman numerals")
     func smartTitleCaseFormatting() {
         #expect(SermonCleanerEngine.smartTitleCase("GOD'S GRACE - PART II") == "God's Grace - Part II")
@@ -56,42 +75,47 @@ struct SermonOutlineCleanerTests {
         #expect(vm.sermonTextFilename(title: "") == "Sermon-Untitled.txt")
     }
 
-    @Test("End-to-end processing of sample TestFiles")
-    func sampleFilesProcessing() throws {
-        let repoRoot = URL(filePath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let testFilesDir = repoRoot.appending(path: "TestFiles", directoryHint: .isDirectory)
+    @Test("TestFiles directory contains all 11 sample files and processes each without errors", arguments: allTestFileURLs())
+    func processEveryFileInTestFilesDirectory(fileURL: URL) throws {
+        #expect(FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)))
 
-        guard FileManager.default.fileExists(atPath: testFilesDir.path(percentEncoded: false)) else {
-            return
+        if SermonCleanerEngine.isEmlFile(fileURL) {
+            let inspection = SermonCleanerEngine.inspectEmlFile(fileURL)
+            #expect(inspection.sender == "Ernest Fink")
+
+            if !inspection.attachments.isEmpty {
+                // EML with attachment (e.g., [CHFC Media] OVER HEAD 3.eml -> LISTEN OVERHEAD.docx)
+                for attachment in inspection.attachments {
+                    let tempURL = FileManager.default.temporaryDirectory
+                        .appending(path: "TestAttachment-\(UUID().uuidString)-\(attachment.filename)")
+                    defer { try? FileManager.default.removeItem(at: tempURL) }
+                    try attachment.data.write(to: tempURL, options: .atomic)
+
+                    let author = SermonCleanerEngine.extractDocumentAuthor(from: tempURL)
+                    let result = try SermonCleanerEngine.processSermonFile(
+                        url: tempURL,
+                        speaker: author ?? inspection.sender ?? SermonCleanerEngine.defaultSpeaker,
+                        maxLineChars: 105,
+                        fallbackTitle: inspection.subject
+                    )
+                    #expect(!result.title.isEmpty)
+                    #expect(!result.lines.isEmpty)
+                    #expect(!result.scriptures.isEmpty)
+                    #expect(result.lines.allSatisfy { $0.count <= 105 })
+                }
+                return
+            }
         }
 
-        // 1. Word (.docx)
-        let docxURL = testFilesDir.appending(path: "We will not step back - OUTLINES.docx")
-        let docxResult = try SermonCleanerEngine.processSermonFile(url: docxURL, speaker: "Pastor John", maxLineChars: 105)
-        #expect(!docxResult.title.isEmpty)
-        #expect(!docxResult.lines.isEmpty)
-        #expect(!docxResult.scriptures.isEmpty)
-        #expect(docxResult.lines.allSatisfy { $0.count <= 105 })
-
-        // 2. PowerPoint (.pptx)
-        let pptxURL = testFilesDir.appending(path: "7 Aspects of Manifestation of Holy Spirit.pptx")
-        let pptxResult = try SermonCleanerEngine.processSermonFile(url: pptxURL, speaker: "Pastor John", maxLineChars: 105)
-        #expect(!pptxResult.lines.isEmpty)
-
-        // 3. PDF (.pdf)
-        let pdfURL = testFilesDir.appending(path: "Renewing Your Mind  (scriptures for media team).pdf")
-        let pdfResult = try SermonCleanerEngine.processSermonFile(url: pdfURL, speaker: "Pastor John", maxLineChars: 105)
-        #expect(!pdfResult.lines.isEmpty)
-        #expect(!pdfResult.scriptures.isEmpty)
-
-        // 4. Apple Mail (.eml)
-        let emlURL = testFilesDir.appending(path: "[CHFC Media] OVER HEAD.eml")
-        #expect(SermonCleanerEngine.isEmlFile(emlURL))
-        let inspection = SermonCleanerEngine.inspectEmlFile(emlURL)
-        #expect(inspection.sender != nil)
-        let emlResult = try SermonCleanerEngine.processSermonFile(url: emlURL, speaker: inspection.sender ?? "Pastor John", maxLineChars: 105)
-        #expect(!emlResult.lines.isEmpty)
+        let author = SermonCleanerEngine.extractDocumentAuthor(from: fileURL)
+        let result = try SermonCleanerEngine.processSermonFile(
+            url: fileURL,
+            speaker: author ?? SermonCleanerEngine.defaultSpeaker,
+            maxLineChars: 105
+        )
+        #expect(!result.title.isEmpty)
+        #expect(!result.lines.isEmpty)
+        #expect(!result.scriptures.isEmpty)
+        #expect(result.lines.allSatisfy { $0.count <= 105 })
     }
 }
