@@ -1,0 +1,623 @@
+Delivered-To: dan.horning@cityharvestalbany.com
+Received: by 2002:a05:7011:1f0b:b0:524:be55:244a with SMTP id uv11csp5325092mdb;
+        Tue, 4 Aug 2026 14:30:37 -0700 (PDT)
+X-Forwarded-Encrypted: i=5; AHgh+RpGXrq5nzQR+45B5hw/LF/lZhB7HJ3+NZyFbmLrIdPKAZdBI7xnIbcSIYkZeNe1TUeHiUXODdjxyZwTMA==@cityharvestalbany.com
+X-Received: by 2002:a05:651c:a20f:10b0:39a:cfea:f16 with SMTP id 38308e7fff4ca-39fbb335526mr1174711fa.31.1785879037286;
+        Tue, 04 Aug 2026 14:30:37 -0700 (PDT)
+ARC-Seal: i=4; a=rsa-sha256; t=1785879037; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=o0Nl+b6k490MpQJQLPzsgLGLYv5RHNDa4PMuO9xd9wQia8fsKveo1tVSPNovjTjtwO
+         xDIsUi0cbWkt24R+73zA8GpVun7IkgXiIP//dDo1PDWnbCoixtYC1HqVODJ4huE5SYTZ
+         GbWq7wgfhfCa1TFjsag9fuMCehWlBbE5Q8j2JHXpV1IHaXkpWi9i8NRIJQlJdZngy711
+         sx7Q3O3ELu5HSx28XvvsdTn2gX1vXAHwEytj+bwB+42/RI6TOpBm1TJHiIbN+YfN00pb
+         1+OfD9xx860JhKgZy/BJw0EHNXrnhdgxO6mHDY4RIDESlxwtFtFkoz6EOgo4CK4DpYpa
+         4Pxg==
+ARC-Message-Signature: i=4; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=hhXyGEmVot/pNBOHMcjHHM4u1ZTCffdmXj6ZEZ6HgW4=;
+        fh=3QJfwrPmhgQ+owu56tkrVYC2TOIVwYlY8pyfRxVlIhY=;
+        b=B+0lXcn/GvOy0sMVgSTZpTtZapkZeCD0mL/MgPVM2bG3hg6Z1FtrUeCQ2UrhONhh/9
+         Hjnpw10YhIVcCVsWKtbaExtnBjI2z0QEtCJHpWzw1pBlA61vTHBTQ9Xkz4tmHDgI1OVT
+         xGW7qEklTc9g76IWc1ZGSYS5asYaiQFk0WYGj96tLHwCSnwfZxHyZsVO0EcAvNWPhCi1
+         YvwvcXTfimL7ihs2F6ffZWmpX8LxWOtZA0MQDKCwlD6t5KI56JwZcG7epl8xvz/ayzfL
+         QeQazdaarmdgi3sYyK62MnfN1KcnABZGALAJg2xKJYucbrDZdZDQy1xrXterWdHKvObs
+         9ENw==;
+        dara=google.com
+ARC-Authentication-Results: i=4; mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=CVoBTEbE;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbd36zwhtxmmbb65tzhjqmgqeuws2l6q@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBD36ZWHTXMMBB65TZHJQMGQEUWS2L6Q@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Return-Path: <mediateam+bncBD36ZWHTXMMBB65TZHJQMGQEUWS2L6Q@cityharvestalbany.com>
+Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+        by mx.google.com with SMTPS id 38308e7fff4ca-39fbcb56f11sor125141fa.0.2026.08.04.14.30.37
+        for <dan.horning@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 04 Aug 2026 14:30:37 -0700 (PDT)
+Received-SPF: pass (google.com: domain of mediateam+bncbd36zwhtxmmbb65tzhjqmgqeuws2l6q@cityharvestalbany.com designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20251104.gappssmtp.com header.s=20251104 header.b=CVoBTEbE;
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbd36zwhtxmmbb65tzhjqmgqeuws2l6q@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBD36ZWHTXMMBB65TZHJQMGQEUWS2L6Q@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+ARC-Seal: i=3; a=rsa-sha256; t=1785879037; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=iXpWlou1QAw+p2Le8AH+F98itaZrIVF3Cb7zR4DnhmpBWDPqBLlrK2fsO5jTZCluAM
+         6muzbhVXts1hjQz4DqI9lB74IAQA+JWS+IkS9f6IIEdEyM3Y7s4vLJXs9XuWyre+SyYx
+         RkOGUW9o7Do1DusZYPxkLPVlHaHdjE4hDTdV5DE4eWKMQMm3rtAx1niR6ZvJhinH/Bic
+         s1sH+/hgFGupfByUHpHAkfhXSYbVXZR+Wl2An4ANbkIIWQR9QCiZuVe6AUuLjINZ2kOu
+         rp/iedhgL7BM1Y3pBvjn70xbTllbczxCuMPHvNzNwG9MdYlarQvKxCt7QXlMxC/QMhp+
+         lvPw==
+ARC-Message-Signature: i=3; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=hhXyGEmVot/pNBOHMcjHHM4u1ZTCffdmXj6ZEZ6HgW4=;
+        fh=3QJfwrPmhgQ+owu56tkrVYC2TOIVwYlY8pyfRxVlIhY=;
+        b=OCidnxOT6dXH+miWsE3Q8g9VQ3Fm9iu4vMAB7V0UdD0YYHYkArfnqAkpNpM/QUfeUU
+         nUwEO9mKsrMR5S3hk/3N/H6WsF75QrEzVyTGpKAGC4UMwVEKonj6+cvT0BOO4Bba+16K
+         BK8KDwIOBTh4sRGdpFmTfSPYt3eB9PUGgs6elzOpt2zz42oQ/WlI5mgLGjT1J+8lmdjm
+         Ld1A1I8Drtoq+Eh1X59lbUoY+SzC3jm5AlVESHpbiecOSs81gML6glvFmztx7EVLV7gC
+         OJaxZ33d8sHpZ3rbgRHE/hAH/tO9EKjKYOuktRjqxN+/iX5BiNVrT5qb7WZtLLui9M/S
+         Becw==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=3; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b=JDH7jyIA;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of yousafyounis@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=yousafyounis@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=cityharvestalbany-com.20251104.gappssmtp.com; s=20251104; t=1785879037; x=1786483837; darn=cityharvestalbany.com;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:x-original-authentication-results
+         :x-original-sender:content-type:to:subject:message-id:date:from
+         :mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=hhXyGEmVot/pNBOHMcjHHM4u1ZTCffdmXj6ZEZ6HgW4=;
+        b=CVoBTEbEZyvI8s+ZYaAUbt9CP9umRFYZXsBOFC/ehNuGwYmGFGTxKVydoEDo6MQ8DA
+         EjkEzwn6M3mhAK+cAQzfWEGp6e9bI+zAFw8PSsU4Q8ORbbd5xrIvoeqNAyX3VnHnAVeX
+         D1EUAM2q37lbA6ZJYpU9Dw1tGnc37k4ZfHnIkq6T6zlsCOGuMxjSm9g+Fm7qKApt/wHl
+         cwVOdl92ebN5ITkcarn8VW996j4wFat2SqPnRbEMPv997k8AJC4h0TuwfSBPdDMTvoW9
+         tQWXDPDtgzjx2QUGMj8VtyX96SyyrN6PnTM9Zyy0ZRiWHhQoEQaARjwa4LrC04ln7j7Z
+         g8Mg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1785879037; x=1786483837;
+        h=list-unsubscribe:list-archive:list-help:list-post
+         :x-spam-checked-in-group:list-id:mailing-list:precedence:reply-to
+         :x-original-authentication-results:x-original-sender:content-type:to
+         :subject:message-id:date:from:mime-version:x-gm-gg:x-beenthere
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=hhXyGEmVot/pNBOHMcjHHM4u1ZTCffdmXj6ZEZ6HgW4=;
+        b=Q7AJQJE+VSU5zXIj6UXST/7bdI/9V3XpoeCsKKu7i9iW6+xMtukdKvDwuvmA8mlPY1
+         vk65FRxmUAGWjHtY+W2V+vZ1cKumrifa9X2EkZUC+5+SjafFxOG8uThYZyZLVCp/cTQ3
+         Ca2ZOfpoJ2I0BC7n1MP3OZLIOvVacikM4EHopWLwe38fSL23Zp3pkUzdOy2SJVN/ArHB
+         iEfntWYrbrctKpNOh6PVAha/dldwsagHW0lQeIAtTagTx/O6k3APAsp/eoMFuh/A96xg
+         j3HI6jTWueZD94UMabbVWvbL9Mco6fdOefrjTGecx3UIeGqIgw/OMoT+/WhUrngSbWkK
+         pe5g==
+X-Forwarded-Encrypted: i=3; AHgh+RqCKeI1+a2RKCzBONLeLh8nTqe+uLJTk2gAN61UHBrkORlDAwADvg2xOxGrGwxHG4VRpIvKhS5OVAC5Bw==@cityharvestalbany.com
+X-Gm-Message-State: AOJu0YxjTdwrQ5UbbJezgN73mECUcb80FG9SgWKTL22aqp5qQhorm64N
+	F8P/rgVtRsqYxYW5AYO3FJkpfoh75SYFZwtw+DxTB48u1GhrzjhrFdfPzTIKpNCbzZJzHA==
+X-Received: by 2002:a05:651c:43da:10b0:39b:35bd:e708 with SMTP id 38308e7fff4ca-39fbb1e3733mr1293711fa.1.1785879036389;
+        Tue, 04 Aug 2026 14:30:36 -0700 (PDT)
+X-BeenThere: mediateam@cityharvestalbany.com; h="Aa7YSPQ1BEaIziGCkrg0F3oBa2GbtNhtGHAJkUqiyxqE6CXOZA=="
+Received: by 2002:a2e:3c13:0:b0:39e:fe5e:a75b with SMTP id 38308e7fff4ca-39f679c648bls17083351fa.1.-pod-prod-02-eu;
+ Tue, 04 Aug 2026 14:30:34 -0700 (PDT)
+X-Received: by 2002:a05:6512:3181:b0:5b2:95cb:431d with SMTP id 2adb3069b0e04-5b2f4ce4ebdmr194369e87.55.1785879033859;
+        Tue, 04 Aug 2026 14:30:33 -0700 (PDT)
+ARC-Seal: i=2; a=rsa-sha256; t=1785879033; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=RupJQNoVNLGPkJr+2sl0p73FM9Nw8HsD40P0ZZE/wsYZP0TbhSHoTl4l3B5tUFdvtZ
+         BCjQ1bpCTQlDFQXM3ikvyxzzW8q/Nq3MKUvkskpbuhy/YKQTz8bCFclFZJqPesmqP1a1
+         ArLRQ1hpieodCHI+7ArRq+0UT8uHIXWM1amWl5C+mGqa1xRCTX/pKxYeEyc3RyAFYB0x
+         /DmkSBPPDmJNxsmIto0QCYrR2xZVqq7GIE2JvbLTNEbPshH3quqslWOunoQl7ahn4FF/
+         e8GXDnuFH70l4LMDVvlUL4IkzmSZ7sQz3IQouvqvXMaqnWYwjehEpHmPd7eYGYbnLhFI
+         Zh0A==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=hvHueC3OyQGRgrlpR9omPJK5SZrVILkcEWleqM0kofA=;
+        fh=Mi7ojWCct6u7VRxjN57/Tav87NyJqFSIe/rNsPNkYhU=;
+        b=csxKaK6lDSvktau741VkQLaqnP7Bozj2QTI0RDSvZSTDD03ttdR+U+Ya0wn8bhmcqM
+         5AEX0sRyTL/hi3jvlH28eqtvwtgRPSRBm6zR4WJaiIO1fEF1+se7tS0MU2/+9182iLag
+         Dx0VQrppk/I71rnTWhY4z2sdbWhvNIRPk6ddESEZ8pQvaa1OMN/UqOo5L7BfS4+XFmqn
+         rHW7lUM7TXLOBOw0UEoZmtR993ybQwKZCXzVI+dLSECspE6fzfThvSHyRCGQykPbiWRV
+         1EfTkS3YMesXq3g9ksODfKtOmk0udrp66Panm+mJF2ShP80hiWjIsr7WKlQLU40Yz/vU
+         FHqw==;
+        dara=google.com
+ARC-Authentication-Results: i=2; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20251104 header.b=JDH7jyIA;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of yousafyounis@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=yousafyounis@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 2adb3069b0e04-5b2f6287503sor29570e87.13.2026.08.04.14.30.33
+        for <mediateam@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 04 Aug 2026 14:30:33 -0700 (PDT)
+Received-SPF: pass (google.com: domain of yousafyounis@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+ARC-Seal: i=1; a=rsa-sha256; t=1785879033; cv=none;
+        d=google.com; s=arc-20260327;
+        b=EFp+KAmbe7JtyHxrUl00Wsge59eF5garVH4dvC1pvsUEmQmXTBm96bq+0Iy8ZEsfGJ
+         7nK4OqFc/usdU4jcu33If8UYjBzIq2cjyp3tsQk31EpFmrS5+1M6YJKNH70z8zjqLg4n
+         aBQpMWxaba3s1yTkm34OW3R0N/Qzhra6BKossxDCElz2yUHYCSUteOrsmKQcwWym2hPz
+         YonICivcYGYXndh43sNrlL62RdgVMTl4NNraEVrc5n1iXahXJKfE++LRnhvG+4nPCw5T
+         nSBtd80gMlSTJmjw1jcT7ptxhD0YjMlLA6nXGnNIYyL9BJJ80/JzfZT5dLnG0E47UlHP
+         wR5A==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=hvHueC3OyQGRgrlpR9omPJK5SZrVILkcEWleqM0kofA=;
+        fh=Mi7ojWCct6u7VRxjN57/Tav87NyJqFSIe/rNsPNkYhU=;
+        b=GEKRAEy49+8kETl+I9lygbeIW6K9DJcjlvb3tucHVixQ3KHQfGe2gbwaUAcMX24AB/
+         0Ndf3nO0qlBHEYR425IkX89+ZeopcWgvFIfTNFkA1w6TkqIdFWEC8CjUj5YnFiGRYC1J
+         cnvAiENu6zRtW8YlTwzGcBPQmDcoaoB++AXQ9rB+gY5JVGrSjU5u0tVE1JBp3iLLWU3/
+         VRqdEqdqcophYsNbZq7S3no9VNlugbTT2+C/P5gcosWRmXy+uo5TkAS5TmGKLPyW1Zjl
+         Vg2z/hbysh8ZctxoU4Pz7aJ1eXNS4YmEcRcYAoJdDkedSXJhnIAa9/ujDjZ1BnpKBUNc
+         0mdg==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+X-Gm-Gg: AR+sD12C7uI+cqpI0klS2kCqw/zeBrg1SDJ4um67uf54pR3fZ99q3xZy3+QqbuhM0SX
+	f5B+GdCMSjRWlfiPrbHLpHo9h6ibi1bTm65y03g3Fy+yh22RX3VyR0Off92ArG4+fhQpcDMLiyh
+	BBRhu40ucwOfNPQz7onvbx+ZSQMKwRdtz0/3TMPjUMyieSdK8CeMpo4kJ7OaeclAXTn7oQgdxZ0
+	BuP0awhcWwnwEAVh7Vw3H1+v8/nC3YHQwfgYBWKpjqHEQqegd7WQ9FJP+KvDT8n4FRpZqillr4W
+	Og5kVhWls4PSpcCoZCBQOuZbaOYV9nSN6SeZDIljs9wU
+X-Received: by 2002:a05:6512:50d:b0:5ae:bd27:a13 with SMTP id
+ 2adb3069b0e04-5b2f4ce36cfmr130460e87.54.1785879033123; Tue, 04 Aug 2026
+ 14:30:33 -0700 (PDT)
+MIME-Version: 1.0
+From: Yousaf <yousafyounis@gmail.com>
+Date: Tue, 4 Aug 2026 17:30:21 -0400
+X-Gm-Features: AUfX_mxvgogLgISETNqUme_rnntBc-SLQbmiSiQOp360dj1geCk36IvmlZdNUDM
+Message-ID: <CAPaiXs7ZKampWYtxdr-PPnitv6bCgocXdCw7MG=-2+GWjp68Tw@mail.gmail.com>
+Subject: [CHFC Media] God of Justice and Love / Verses for Tuesday 08/14/2026
+To: mediateam@cityharvestalbany.com
+Content-Type: multipart/alternative; boundary="000000000000619b8a06583f5d0b"
+X-Original-Sender: yousafyounis@gmail.com
+X-Original-Authentication-Results: mx.google.com;       dkim=pass
+ header.i=@gmail.com header.s=20251104 header.b=JDH7jyIA;       arc=pass
+ (i=1);       spf=pass (google.com: domain of yousafyounis@gmail.com
+ designates 209.85.220.41 as permitted sender) smtp.mailfrom=yousafyounis@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Reply-To: mediateam@cityharvestalbany.com
+Precedence: list
+Mailing-list: list mediateam@cityharvestalbany.com; contact mediateam+owners@cityharvestalbany.com
+List-ID: <mediateam.cityharvestalbany.com>
+X-Spam-Checked-In-Group: mediateam@cityharvestalbany.com
+X-Google-Group-Id: 414320174969
+List-Post: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/post>,
+ <mailto:mediateam@cityharvestalbany.com>
+List-Help: <https://support.google.com/a/cityharvestalbany.com/bin/topic.py?topic=25838>,
+ <mailto:mediateam+help@cityharvestalbany.com>
+List-Archive: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/>
+List-Unsubscribe: <mailto:googlegroups-manage+414320174969+unsubscribe@googlegroups.com>,
+ <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/subscribe>
+
+--000000000000619b8a06583f5d0b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+*Psalm 89:14*
+
+"*Righteousness* and *justice* are the foundation of your throne;
+
+steadfast love and faithfulness go before you."
+
+
+*Romans 3:23*
+
+"For all have sinned and fall short of the glory of God."
+
+
+*Hebrews 9:27*
+
+*27 *And as it is appointed for men to die once, but after this the
+judgment,
+
+
+
+*Ecclesiastes 12:*13*=E2=80=9314*
+
+*13 *Let us hear the conclusion of the whole matter:
+
+    Fear God and keep His commandments, For this is man=E2=80=99s all.
+*14 *For God will bring every work into judgment, Including every secret
+thing,
+
+
+*Hebrews 9:22*
+
+*22 *And according to the law almost all things are purified with blood,
+and *without shedding of blood there is no remission..*
+
+
+
+*Leviticus 17:11*
+
+*11 *For the life of the flesh *is* in the blood, and I have given it to
+you upon the altar to make atonement for your souls; for it *is* the blood
+*that* makes atonement for the soul.=E2=80=99
+
+
+John 3:16 says,
+
+"For God so loved the world that He gave His only Son..."
+
+
+Lamentations 3:22=E2=80=9323
+
+*22 **Through* the Lord=E2=80=99s mercies we are not consumed, Because His
+compassions fail not.
+*23 **They are* new every morning; Great *is* Your faithfulness.
+
+
+Psalm 103:8
+
+=E2=80=9CThe Lord *is* merciful and gracious, Slow to anger, and abounding =
+in
+mercy.=E2=80=9D
+
+Micah 7:18=E2=80=9319
+
+*18 *Who *is* a God like You,  Pardoning iniquity And passing over the
+transgression of the remnant of His heritage? He does not retain His anger
+forever, Because He delights *in* mercy.[a
+<https://www.biblegateway.com/passage/?search=3DMicah%207%3A18%E2%80%9319%2=
+0&version=3DNKJV#fen-NKJV-22683a>
+]
+*19 *He will again have compassion on us, And will subdue our iniquities.
+
+You will cast all [b
+<https://www.biblegateway.com/passage/?search=3DMicah%207%3A18%E2%80%9319%2=
+0&version=3DNKJV#fen-NKJV-22684b>
+]our sins Into the depths of the sea.
+
+Ephesians 2:4=E2=80=935
+
+*4 *But God, who is rich in mercy, because of His great love with which He
+loved us, *5 *even when we were dead in trespasses, made us alive together
+with Christ (by grace you have been saved),
+
+
+Ephesians 4:31=E2=80=9332
+
+*31 *Let all bitterness, wrath, anger, [a
+<https://www.biblegateway.com/passage/?search=3DEphesians%204%3A31%E2%80%93=
+32%20&version=3DNKJV#fen-NKJV-29304a>
+]clamor, and evil speaking be put away from you, with all malice.
+
+*32 *And be kind to one another, tenderhearted, forgiving one another, even
+as God in Christ forgave you.
+
+Colossians 3:13
+
+*=E2=80=9C*bearing with one another, and forgiving one another, if anyone h=
+as a
+complaint against another; even as Christ forgave you, so you also *must
+do.=E2=80=9D*
+
+Matthew 6:14=E2=80=9315
+
+=E2=80=9CFor if you forgive men their trespasses, your heavenly Father will=
+ also
+forgive you. *15 *But if you do not forgive men their trespasses, neither
+will your Father forgive your trespasses.
+
+Luke 6:36=E2=80=9337
+
+=E2=80=9CJudge not, and you shall not be judged. Condemn not, and you shall=
+ not be
+condemned. Forgive, and you will be forgiven."
+
+
+Matthew 5:7
+
+=E2=80=9CBlessed *are* the merciful, For they shall obtain mercy.=E2=80=9D
+
+James 2:13
+
+"  For judgment is without mercy to the one who has shown no mercy. Mercy
+triumphs over judgment.."
+
+
+1 John 1:9
+
+" If we confess our sins, He is faithful and just to forgive us *our* sins
+and to cleanse us from all unrighteousness.."
+
+Isaiah 1:18
+
+=E2=80=9CCome now, and let us reason together,=E2=80=9D Says the Lord,
+=E2=80=9CThough your sins are like scarlet, They shall be as white as snow;
+Though they are red like crimson, They shall be as wool=E2=80=9D.
+
+Psalm 86:5
+
+=E2=80=9CFor You, Lord, *are* good, and ready to forgive, And abundant in m=
+ercy to
+all those who call upon You.=E2=80=9D
+
+
+--000000000000619b8a06583f5d0b
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><p class=3D"MsoNormal" style=3D"margin:0in;line-height:nor=
+mal;font-size:12pt;font-family:Aptos,sans-serif"><b><span style=3D"backgrou=
+nd:lightgrey">Psalm 89:14</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;text-indent:0.5in;line-height:no=
+rmal;font-size:12pt;font-family:Aptos,sans-serif">&quot;<u>Righteousness</u=
+>
+and <u>justice</u> are the foundation of your throne; </p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;text-indent:0.5in;line-height:no=
+rmal;font-size:12pt;font-family:Aptos,sans-serif">steadfast
+love and faithfulness go before you.&quot;</p><p class=3D"MsoNormal" style=
+=3D"margin:0in;text-indent:0.5in;line-height:normal;font-size:12pt;font-fam=
+ily:Aptos,sans-serif"><br></p><p class=3D"MsoNormal" style=3D"margin:0in;li=
+ne-height:normal;font-size:12pt;font-family:Aptos,sans-serif"><b><span styl=
+e=3D"background:lightgrey">Romans 3:23</span></b></p><p class=3D"MsoNormal"=
+ style=3D"margin:0in;text-indent:0.5in;line-height:normal;font-size:12pt;fo=
+nt-family:Aptos,sans-serif">
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">&quot;For all
+have sinned and fall short of the glory of God.&quot;</p><p class=3D"MsoNor=
+mal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Apto=
+s,sans-serif"><br></p><p class=3D"MsoNormal" style=3D"margin:0in;line-heigh=
+t:normal;font-size:12pt;font-family:Aptos,sans-serif"><b><span style=3D"bac=
+kground:lightgrey">Hebrews 9:27</span></b></p><p class=3D"MsoNormal" style=
+=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-ser=
+if"><b><sup>27=C2=A0</sup></b>And
+as it is appointed for men to die once,=C2=A0but after this the judgment,</=
+p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:1=
+2pt;font-family:Aptos,sans-serif">=C2=A0</p><p class=3D"MsoNormal" style=3D=
+"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif"=
+><b><span style=3D"background:lightgrey">Ecclesiastes 12:</span></b><span s=
+tyle=3D"background:lightgrey">13<b>=E2=80=9314</b></span><b></b></p><p clas=
+s=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-=
+family:Aptos,sans-serif"><b><sup>13=C2=A0</sup></b><span style=3D"font-size=
+:10pt">Let us hear the conclusion of the whole matter:</span></p><p class=
+=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-f=
+amily:Aptos,sans-serif">
+
+
+
+
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif"><span style=3D"font-size:10pt">=C2=A0=
+=C2=A0=C2=A0 Fear God and
+keep His commandments, For this is man=E2=80=99s all.<br>
+</span><b><sup>14=C2=A0</sup></b>For=C2=A0God will bring every work into
+judgment, Including every secret thing,</p><p class=3D"MsoNormal" style=3D"=
+margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif">=
+<br></p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-=
+size:12pt;font-family:Aptos,sans-serif"><b><span style=3D"background:lightg=
+rey">Hebrews 9:22</span></b></p><p class=3D"MsoNormal" style=3D"margin:0in;=
+line-height:normal;font-size:12pt;font-family:Aptos,sans-serif"><b><sup>22=
+=C2=A0</sup></b>And
+according to the law almost all things are purified with blood, and=C2=A0<b=
+><i>without
+shedding of blood there is no=C2=A0remission..</i></b></p><p class=3D"MsoNo=
+rmal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Apt=
+os,sans-serif">=C2=A0</p><p class=3D"MsoNormal" style=3D"margin:0in;line-he=
+ight:normal;font-size:12pt;font-family:Aptos,sans-serif"><b><span style=3D"=
+background:lightgrey">Leviticus 17:11</span></b></p><p class=3D"MsoNormal" =
+style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,san=
+s-serif">
+
+
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif"><b><sup>11=C2=A0</sup></b>For
+the=C2=A0life of the flesh=C2=A0<i>is</i>=C2=A0in the blood, and I have giv=
+en
+it to you upon the altar=C2=A0to make atonement for your souls;
+for=C2=A0it=C2=A0<i>is</i>=C2=A0the blood=C2=A0<i>that</i>=C2=A0makes atone=
+ment
+for the soul.=E2=80=99</p><p class=3D"MsoNormal" style=3D"margin:0in;line-h=
+eight:normal;font-size:12pt;font-family:Aptos,sans-serif"><br></p><p class=
+=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-f=
+amily:Aptos,sans-serif"><span style=3D"background:lightgrey">John 3:16</spa=
+n> says,</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;f=
+ont-size:12pt;font-family:Aptos,sans-serif">
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">&quot;For God
+so loved the world that He gave His only Son...&quot;</p><p class=3D"MsoNor=
+mal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Apto=
+s,sans-serif"><br></p><p class=3D"MsoNormal" style=3D"margin:0in;line-heigh=
+t:normal;font-size:12pt;font-family:Aptos,sans-serif"><span style=3D"backgr=
+ound:lightgrey">Lamentations 3:22=E2=80=9323</span>
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif"><b><sup>22=C2=A0</sup></b><i>Through</i=
+>=C2=A0the=C2=A0Lord=E2=80=99s
+mercies we are not consumed, Because His compassions=C2=A0fail not.<br>
+<b><sup>23=C2=A0</sup></b><i>They are</i>=C2=A0new=C2=A0every morning; Grea=
+t=C2=A0<i>is</i>=C2=A0Your
+faithfulness.</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:nor=
+mal;font-size:12pt;font-family:Aptos,sans-serif"><br></p><p class=3D"MsoNor=
+mal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Apto=
+s,sans-serif"><span style=3D"background:lightgrey">Psalm 103:8</span> </p><=
+p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt=
+;font-family:Aptos,sans-serif">=E2=80=9CThe=C2=A0Lord=C2=A0<i>is</i>=C2=A0m=
+erciful
+and gracious, Slow to anger, and abounding in mercy.=E2=80=9D</p><p class=
+=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-f=
+amily:Aptos,sans-serif"><span style=3D"background:lightgrey">Micah 7:18=E2=
+=80=9319</span> </p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:=
+normal;font-size:12pt;font-family:Aptos,sans-serif"><b><sup>18=C2=A0</sup><=
+/b>Who=C2=A0<i>is</i>=C2=A0a
+God like You,=C2=A0 Pardoning iniquity And
+passing over the transgression of=C2=A0the remnant of His heritage? He does=
+ not
+retain His anger forever, Because He delights=C2=A0<i>in</i>=C2=A0mercy.<su=
+p>[</sup><a href=3D"https://www.biblegateway.com/passage/?search=3DMicah%20=
+7%3A18%E2%80%9319%20&amp;version=3DNKJV#fen-NKJV-22683a" title=3D"See footn=
+ote a" style=3D"color:rgb(70,120,134)"><sup>a</sup></a><sup>]</sup><br>
+<b><sup>19=C2=A0</sup></b>He will again have compassion on us, And will sub=
+due
+our iniquities.</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:n=
+ormal;font-size:12pt;font-family:Aptos,sans-serif">You will cast
+all=C2=A0<sup>[</sup><a href=3D"https://www.biblegateway.com/passage/?searc=
+h=3DMicah%207%3A18%E2%80%9319%20&amp;version=3DNKJV#fen-NKJV-22684b" title=
+=3D"See footnote b" style=3D"color:rgb(70,120,134)"><sup>b</sup></a><sup>]<=
+/sup>our sins Into the depths of
+the sea.</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;f=
+ont-size:12pt;font-family:Aptos,sans-serif"><span style=3D"background:light=
+grey">Ephesians 2:4=E2=80=935</span> </p><p class=3D"MsoNormal" style=3D"ma=
+rgin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif">
+
+
+
+
+
+
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif"><b><sup>4=C2=A0</sup></b>But
+God,=C2=A0who is rich in mercy, because of His=C2=A0great love with which H=
+e
+loved us,=C2=A0<b><sup>5=C2=A0</sup></b>even when we were dead in
+trespasses,=C2=A0made us alive together with Christ (by grace you have been
+saved),</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;fo=
+nt-size:12pt;font-family:Aptos,sans-serif"><br></p><p class=3D"MsoNormal" s=
+tyle=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans=
+-serif"><span style=3D"background:lightgrey">Ephesians 4:31=E2=80=9332</spa=
+n> </p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-s=
+ize:12pt;font-family:Aptos,sans-serif"><b><sup>31=C2=A0</sup></b>Let
+all bitterness, wrath, anger,=C2=A0<sup>[</sup><a href=3D"https://www.bible=
+gateway.com/passage/?search=3DEphesians%204%3A31%E2%80%9332%20&amp;version=
+=3DNKJV#fen-NKJV-29304a" title=3D"See footnote a" style=3D"color:rgb(70,120=
+,134)"><sup>a</sup></a><sup>]</sup>clamor, and=C2=A0evil
+speaking be put away from you,=C2=A0with all malice.=C2=A0</p><p class=3D"M=
+soNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family=
+:Aptos,sans-serif"><b><sup>32=C2=A0</sup></b>And=C2=A0be
+kind to one another, tenderhearted,=C2=A0forgiving one another, even as God=
+ in
+Christ forgave you.</p><p class=3D"MsoNormal" style=3D"margin:0in;line-heig=
+ht:normal;font-size:12pt;font-family:Aptos,sans-serif"><span style=3D"backg=
+round:lightgrey">Colossians 3:13</span> </p><p class=3D"MsoNormal" style=3D=
+"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif"=
+><b><sup>=E2=80=9C</sup></b>bearing
+with one another, and forgiving one another, if anyone has a complaint agai=
+nst
+another; even as Christ forgave you, so you also=C2=A0<i>must do.=E2=80=9D<=
+/i></p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-s=
+ize:12pt;font-family:Aptos,sans-serif"><span style=3D"background:lightgrey"=
+>Matthew 6:14=E2=80=9315</span> </p><p class=3D"MsoNormal" style=3D"margin:=
+0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif">=E2=80=
+=9CFor if you
+forgive men their trespasses, your heavenly Father will also forgive you.=
+=C2=A0<b><sup>15=C2=A0</sup></b>But=C2=A0if
+you do not forgive men their trespasses, neither will your Father forgive y=
+our
+trespasses.</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:norma=
+l;font-size:12pt;font-family:Aptos,sans-serif"><span style=3D"background:li=
+ghtgrey">Luke 6:36=E2=80=9337</span> </p><p class=3D"MsoNormal" style=3D"ma=
+rgin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">=E2=80=9CJudge not, and
+you shall not be judged. Condemn not, and you shall not be
+condemned.=C2=A0Forgive, and you will be forgiven.&quot;</p><p class=3D"Mso=
+Normal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:A=
+ptos,sans-serif"><br></p><p class=3D"MsoNormal" style=3D"margin:0in;line-he=
+ight:normal;font-size:12pt;font-family:Aptos,sans-serif"><span style=3D"bac=
+kground:lightgrey">Matthew 5:7</span> </p><p class=3D"MsoNormal" style=3D"m=
+argin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif">=
+=E2=80=9CBlessed=C2=A0<i>are</i>=C2=A0the
+merciful, For they shall obtain mercy.=E2=80=9D</p><p class=3D"MsoNormal" s=
+tyle=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Aptos,sans=
+-serif"><span style=3D"background:lightgrey">James 2:13</span> </p><p class=
+=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-f=
+amily:Aptos,sans-serif">
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">&quot;<b><sup><span style=3D"font-famil=
+y:&quot;Segoe UI&quot;,sans-serif;color:black;background-image:initial;back=
+ground-position:initial;background-size:initial;background-repeat:initial;b=
+ackground-origin:initial;background-clip:initial"> </span>=C2=A0</sup></b>F=
+or=C2=A0judgment
+is without mercy to the one who has shown=C2=A0no=C2=A0mercy.=C2=A0Mercy
+triumphs over judgment..&quot;</p><p class=3D"MsoNormal" style=3D"margin:0i=
+n;line-height:normal;font-size:12pt;font-family:Aptos,sans-serif"><br></p><=
+p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt=
+;font-family:Aptos,sans-serif"><span style=3D"background:lightgrey">1 John =
+1:9</span> </p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:norma=
+l;font-size:12pt;font-family:Aptos,sans-serif">&quot;<span style=3D"font-fa=
+mily:&quot;Segoe UI&quot;,sans-serif;color:black;background-image:initial;b=
+ackground-position:initial;background-size:initial;background-repeat:initia=
+l;background-origin:initial;background-clip:initial"> </span>If
+we=C2=A0confess our sins, He is=C2=A0faithful and just to forgive us=C2=A0<=
+i>our</i>=C2=A0sins
+and to=C2=A0cleanse us from all unrighteousness..&quot;</p><p class=3D"MsoN=
+ormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font-family:Ap=
+tos,sans-serif"><span style=3D"background:lightgrey">Isaiah 1:18 </span></p=
+><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12=
+pt;font-family:Aptos,sans-serif">=E2=80=9CCome now, and
+let us=C2=A0reason together,=E2=80=9D Says the=C2=A0Lord,<br>
+=E2=80=9CThough your sins are like scarlet, They shall be as white as snow;=
+<br>
+Though they are red like crimson, They shall be as wool=E2=80=9D.</p><p cla=
+ss=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12pt;font=
+-family:Aptos,sans-serif"><span style=3D"background:lightgrey">Psalm 86:5</=
+span> </p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;fon=
+t-size:12pt;font-family:Aptos,sans-serif">
+
+
+
+
+
+
+
+
+
+</p><p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size=
+:12pt;font-family:Aptos,sans-serif">=E2=80=9CFor=C2=A0You,
+Lord,=C2=A0<i>are</i>=C2=A0good, and ready to forgive, And abundant in merc=
+y to
+all those who call upon You.=E2=80=9D</p></div>
+
+
+--000000000000619b8a06583f5d0b--

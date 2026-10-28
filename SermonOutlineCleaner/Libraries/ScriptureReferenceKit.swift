@@ -136,9 +136,9 @@ nonisolated enum ScriptureReferenceKit {
         return "(\(booksRegex))\\.?\\s*(\(chapterVersePattern))(?:\\s*\\(?(\(translationsRegex))\\)?)?"
     }()
 
-    /// Matches standalone reference lines even if followed by "says:", "reads:", or ":"
+    /// Matches standalone reference lines even if followed by "says:", "says,", "reads:", or ":"
     static let standaloneRefPattern: String = {
-        return "^\\(?(\(booksRegex))\\.?\\s*(\(chapterVersePattern)|\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*[:;\\-]?\\s*$"
+        return "^\\(?(\(booksRegex))\\.?\\s*(\(chapterVersePattern)|\\d+(?:\\s*-\\s*\\d+)?)\\s*\\(?(\(translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*[:;,\\-]?\\s*$"
     }()
 
     // MARK: - Canonicalization & Formatting

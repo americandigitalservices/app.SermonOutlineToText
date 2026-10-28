@@ -96,8 +96,8 @@ nonisolated enum TypographyAndWrapping {
         text = text.replacingOccurrences(of: "*", with: "")
         // 5. CotEditor rule: Strip leading bullets (including middle dot · \u{00B7}), hyphens, dashes, arrows, and list markers
         text = RegexCache.replace(text, pattern: leadingBulletPattern, template: "")
-        // 6. Strip BibleGateway footnote markers like [a], [b] (even when attached to words like way[b] or commas like land,[c])
-        text = RegexCache.replace(text, pattern: "\\[[a-zA-Z]\\]", template: "")
+        // 6. Strip BibleGateway footnote markers like [a], [b], or [a ] (even when attached to words like way[b] or split across lines)
+        text = RegexCache.replace(text, pattern: "\\[\\s*[a-zA-Z]\\s*\\]", template: "")
         // 7. Normalize number ranges with em/en dashes (e.g., 1—3 -> 1-3)
         text = RegexCache.replace(text, pattern: "(?<=\\d)\\s*[—–]\\s*(?=\\d)", template: "-")
         // 8. Normalize remaining em/en dashes to spaced hyphens ( - )

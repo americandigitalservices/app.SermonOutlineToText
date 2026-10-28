@@ -43,6 +43,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
 
         var activeHeaderRef: String? = nil
         var activeHeaderHasVerse = false
+        var activeHeaderReachedEndVerse = false
         var prevVerseContinues = false
         var seenFirstContentLine = false
 
@@ -56,6 +57,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
             if line == slideBreakMarker {
                 activeHeaderRef = nil
                 activeHeaderHasVerse = false
+                activeHeaderReachedEndVerse = false
                 prevVerseContinues = false
                 continue
             }
@@ -115,8 +117,8 @@ nonisolated final class SermonCleanerEngine: Sendable {
                 if transRaw == nil && idx < rawLines.count {
                     let nextClean = TypographyAndWrapping.cleanBasicTypography(rawLines[idx])
                     if nextClean != slideBreakMarker,
-                       RegexCache.firstMatch(nextClean, pattern: "^\\(?(\(ScriptureReferenceKit.translationsRegex))\\)?(?:\\s*(?:says|reads))?\\s*[:;]?$") != nil {
-                        transRaw = RegexCache.replace(nextClean, pattern: "(?:\\s*(?:says|reads))?\\s*[:;]?$", template: "", caseInsensitive: true)
+                       RegexCache.firstMatch(nextClean, pattern: "^\\(?(\(ScriptureReferenceKit.translationsRegex))\\)?(?:\\s*(?:says|reads))?\\s*[:;,]?$") != nil {
+                        transRaw = RegexCache.replace(nextClean, pattern: "(?:\\s*(?:says|reads))?\\s*[:;,]?$", template: "", caseInsensitive: true)
                         idx += 1
                     }
                 }
@@ -124,6 +126,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
                 let formattedRef = ScriptureReferenceKit.formatRefPrefix(bookRaw, numsRaw, transRaw)
                 activeHeaderRef = formattedRef
                 activeHeaderHasVerse = false
+                activeHeaderReachedEndVerse = false
                 prevVerseContinues = false
                 ScriptureReferenceKit.addScriptureRef(&scriptureList, formattedRef)
                 continue
@@ -134,20 +137,21 @@ nonisolated final class SermonCleanerEngine: Sendable {
                     line,
                     hasSeenVerse: activeHeaderHasVerse,
                     activeRef: activeRef,
-                    prevLineContinues: prevVerseContinues
+                    prevLineContinues: prevVerseContinues,
+                    hasReachedEndVerse: activeHeaderReachedEndVerse
                 ) {
                     outputLines.append(contentsOf: TypographyAndWrapping.splitLongVerse(refPrefix: activeRef, body: line, maxTotalLen: clampedLimit))
                     activeHeaderHasVerse = true
                     let trimmedRaw = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
                     prevVerseContinues = RegexCache.firstMatch(trimmedRaw, pattern: "[,;:]$") != nil
                     if !prevVerseContinues && lineContainsEndVerse(line, activeRef: activeRef) {
-                        activeHeaderRef = nil
-                        activeHeaderHasVerse = false
+                        activeHeaderReachedEndVerse = true
                     }
                     continue
                 } else {
                     activeHeaderRef = nil
                     activeHeaderHasVerse = false
+                    activeHeaderReachedEndVerse = false
                     prevVerseContinues = false
                 }
             }
@@ -164,7 +168,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
                     continue
                 }
 
-                let leadPattern = "^\\(?(\(ScriptureReferenceKit.booksRegex))\\.?\\s*(\(ScriptureReferenceKit.chapterVersePattern))\\s*\\(?(\(ScriptureReferenceKit.translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads))?\\s*(?:[:\\-]\\s*)?(.*)$"
+                let leadPattern = "^\\(?(\(ScriptureReferenceKit.booksRegex))\\.?\\s*(\(ScriptureReferenceKit.chapterVersePattern))\\s*\\(?(\(ScriptureReferenceKit.translationsRegex))?\\)?\\)?(?:\\s*(?:says|reads)\\s*,?)?\\s*(?:[:\\-]\\s*)?(.*)$"
                 if let leadMatch = RegexCache.firstMatch(sub, pattern: leadPattern),
                    !leadMatch[4].isEmpty {
                     let bookRaw = leadMatch[1]
@@ -309,7 +313,8 @@ nonisolated final class SermonCleanerEngine: Sendable {
         _ line: String,
         hasSeenVerse: Bool,
         activeRef: String? = nil,
-        prevLineContinues: Bool = false
+        prevLineContinues: Bool = false,
+        hasReachedEndVerse: Bool = false
     ) -> Bool {
         if RegexCache.firstMatch(line, pattern: "^\\(?(\(ScriptureReferenceKit.booksRegex))\\.?\\s*\(ScriptureReferenceKit.chapterVersePattern)") != nil {
             return false
@@ -348,7 +353,7 @@ nonisolated final class SermonCleanerEngine: Sendable {
                !line.hasSuffix(":") {
                 return true
             }
-            if ref.contains("-"), line.count >= 50, !line.hasSuffix(":") {
+            if !hasReachedEndVerse, ref.contains("-"), line.count >= 50, !line.hasSuffix(":") {
                 return true
             }
         }

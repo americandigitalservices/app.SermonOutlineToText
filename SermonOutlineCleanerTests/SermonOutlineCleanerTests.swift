@@ -87,13 +87,13 @@ struct SermonOutlineCleanerTests {
         #expect(vm.sermonTextFilename(title: "") == "Sermon-Untitled.txt")
     }
 
-    @Test("TestFiles directory contains all 12 sample files and processes each without errors", arguments: allTestFileURLs())
+    @Test("TestFiles directory contains all 13 sample files and processes each without errors", arguments: allTestFileURLs())
     func processEveryFileInTestFilesDirectory(fileURL: URL) throws {
         #expect(FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)))
 
         if SermonCleanerEngine.isEmlFile(fileURL) {
             let inspection = SermonCleanerEngine.inspectEmlFile(fileURL)
-            #expect(inspection.sender == "Ernest Fink")
+            #expect(inspection.sender != nil)
 
             if !inspection.attachments.isEmpty {
                 for attachment in inspection.attachments {
@@ -176,6 +176,30 @@ struct SermonOutlineCleanerTests {
             "2 Corinthians 4:17 (KJV)",
             "Colossians 3:2 (KJV)"
         ])
+    }
+
+    @Test("God of Justice and Love EML handles 'says,' standalone reference, split footnotes, and multi-sentence final verses")
+    func godOfJusticeAndLoveEmlParsing() throws {
+        let emlURL = Self.testFilesDirectory.appending(path: "[CHFC Media] God of Justice and Love _ Verses for Tuesday 08_14_2026.eml")
+        let inspection = SermonCleanerEngine.inspectEmlFile(emlURL)
+        #expect(inspection.sender == "Yousaf")
+
+        let result = try SermonCleanerEngine.processSermonFile(
+            url: emlURL,
+            speaker: inspection.sender ?? SermonCleanerEngine.defaultSpeaker,
+            maxLineChars: 105,
+            fallbackTitle: inspection.subject
+        )
+
+        // "John 3:16 says,\n\"For God so loved the world that He gave His only Son...\""
+        #expect(result.lines.contains("John 3:16 - \"For God so loved the world that He gave His only Son...\""))
+        #expect(!result.lines.contains("John 3:16 - ,"))
+
+        // Multi-sentence final verse in Micah 7:18-19 and stripped split BibleGateway footnotes [a <https://...> ] / [b <https://...> ]
+        #expect(result.lines.contains("Micah 7:18-19 - He does not retain His anger forever, Because He delights in mercy."))
+        #expect(result.lines.contains("Micah 7:18-19 - You will cast all our sins Into the depths of the sea."))
+        #expect(!result.lines.contains(where: { $0.contains("[a") || $0.contains("[b") }))
+        #expect(result.scriptures.count == 20)
     }
 
     @Test("TestFiles regression checks for all parsing improvements")
