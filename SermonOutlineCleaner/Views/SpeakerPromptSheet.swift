@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 //
 //  SpeakerPromptSheet.swift
@@ -8,50 +9,46 @@ import SwiftUI
 //  Licensed under the GNU General Public License v3.0 (GPL-3.0)
 //
 
-struct SpeakerPromptSheet: View {
-    let filename: String
-    @Binding var speakerName: String
-    let onConfirm: (String) -> Void
-    let onCancel: () -> Void
+// MARK: - Native SwiftUI Speaker Prompt Sheet (Guaranteed TextField Cursor & Focus)
 
-    @FocusState private var isFocused: Bool
+struct SpeakerPromptSheet: View {
+    let defaultSpeaker: String
+    var onConfirm: (String) -> Void
+    var onCancel: () -> Void
+
+    @State private var enteredName: String = ""
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                Image(systemName: "person.crop.circle.badge.questionmark")
+                Image(systemName: "person.wave.2.fill")
                     .font(.title2)
-                    .foregroundStyle(.tint)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Confirm Main Speaker")
-                        .font(.headline)
-                    Text(filename)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
+                    .foregroundStyle(Color.accentColor)
+                Text("Enter Speaker Name")
+                    .font(.headline)
             }
 
-            Text("Who is the speaker for this sermon outline?")
+            Text("Confirm or enter the speaker's name for this sermon outline:")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            TextField("Speaker Name", text: $speakerName)
+            TextField(SermonCleanerEngine.defaultSpeaker, text: $enteredName)
                 .textFieldStyle(.roundedBorder)
-                .focused($isFocused)
+                .focused($isTextFieldFocused)
+                .defaultFocus($isTextFieldFocused, true)
                 .onSubmit {
                     submit()
                 }
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) {
+                Button("Cancel") {
                     onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
 
-                Button("Process Outline") {
+                Button("Continue") {
                     submit()
                 }
                 .buttonStyle(.borderedProminent)
@@ -60,14 +57,16 @@ struct SpeakerPromptSheet: View {
             .padding(.top, 4)
         }
         .padding(20)
-        .frame(width: 390)
+        .frame(width: 380)
         .onAppear {
-            isFocused = true
+            enteredName = defaultSpeaker
+            NSApp.activate()
+            isTextFieldFocused = true
         }
     }
 
     private func submit() {
-        let trimmed = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        onConfirm(trimmed.isEmpty ? SermonCleanerEngine.defaultSpeaker : trimmed)
+        let trimmed = enteredName.trimmingCharacters(in: .whitespacesAndNewlines)
+        onConfirm(trimmed.isEmpty ? defaultSpeaker : trimmed)
     }
 }

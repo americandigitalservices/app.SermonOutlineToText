@@ -11,25 +11,33 @@ import AppKit
 
 struct PreviewCard: View {
     let title: String
-    let subtitle: String
-    let icon: String
+    let badge: String
     let text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Label(title, systemImage: icon)
-                    .font(.subheadline.weight(.semibold))
+                Text(title)
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Spacer()
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(badge)
+                    .font(.caption2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.15))
+                    .clipShape(Capsule())
             }
-            ReadOnlyMonospacedTextView(text: text)
+
+            ReadOnlyMonospacedTextView(text: text.isEmpty ? "—" : text, isPlaceholder: text.isEmpty)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.textBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(.quaternary, lineWidth: 1)
+                        .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
                 )
         }
     }
@@ -37,45 +45,46 @@ struct PreviewCard: View {
 
 struct ReadOnlyMonospacedTextView: NSViewRepresentable {
     let text: String
-
-    final class Coordinator {
-        var lastText: String = ""
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
+    let isPlaceholder: Bool
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
         scrollView.drawsBackground = true
         scrollView.backgroundColor = .textBackgroundColor
+        scrollView.borderType = .noBorder
 
         if let textView = scrollView.documentView as? NSTextView {
             textView.isEditable = false
             textView.isSelectable = true
             textView.isRichText = false
-            textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-            textView.textColor = .labelColor
+            textView.drawsBackground = true
             textView.backgroundColor = .textBackgroundColor
-            textView.textContainerInset = NSSize(width: 6, height: 6)
+            textView.font = NSFont.monospacedSystemFont(ofSize: 11.5, weight: .regular)
+            textView.textContainerInset = NSSize(width: 6, height: 8)
             textView.isVerticallyResizable = true
             textView.isHorizontallyResizable = false
+            textView.autoresizingMask = [.width]
             textView.textContainer?.widthTracksTextView = true
-            textView.string = text
-            context.coordinator.lastText = text
+            textView.textContainer?.containerSize = NSSize(
+                width: scrollView.contentSize.width,
+                height: CGFloat.greatestFiniteMagnitude
+            )
         }
+
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard context.coordinator.lastText != text,
-              let textView = scrollView.documentView as? NSTextView else {
-            return
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        textView.textColor = isPlaceholder ? .secondaryLabelColor : .labelColor
+
+        if textView.string != text {
+            textView.string = text
+            // Always snap scroll position back to top-left when text updates
+            textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
         }
-        context.coordinator.lastText = text
-        textView.string = text
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 import UniformTypeIdentifiers
 import AppKit
 
@@ -11,424 +12,440 @@ import AppKit
 //
 
 struct ContentView: View {
-    @Bindable var viewModel: SermonWorkspaceViewModel
 
-    init(viewModel: SermonWorkspaceViewModel = SermonWorkspaceViewModel()) {
-        self.viewModel = viewModel
-    }
+    @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = URL.homeDirectory
+        .appending(path: "Desktop", directoryHint: .isDirectory)
+        .path(percentEncoded: false)
+
+    @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
+
+    @Bindable var viewModel = SermonWorkspaceViewModel()
 
     var body: some View {
-        ZStack {
-            MailAwareDropView(isTargeted: $viewModel.isTargetedForDrop) { droppedURL in
-                handleIncomingFile(droppedURL)
-            }
+        VStack(spacing: 14) {
+            // 1. Settings Bar: Save Location, Speaker Name (starts blank) & Column Limit
+            GroupBox {
+                Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
+                    GridRow {
+                        Text("Save Location:")
+                            .fontWeight(.semibold)
+                            .frame(width: 105, alignment: .leading)
+                        TextField("Output Directory", text: $saveDirectoryPath)
+                            .textFieldStyle(.roundedBorder)
+                            .disabled(true)
+                        Button("Browse…", action: selectOutputDirectory)
+                            .frame(width: 110)
+                    }
+                    GridRow {
+                        Text("Speaker Name:")
+                            .fontWeight(.semibold)
+                            .frame(width: 105, alignment: .leading)
+                        HStack(spacing: 12) {
+                            TextField("Leave blank to prompt on file load…", text: $viewModel.speakerName)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit(applySpeakerChangeIfLoaded)
 
-            VStack(spacing: 14) {
-                headerControlsSection
-                previewPanesSection
-                footerStatusBar
-            }
-            .padding(16)
+                            Divider().frame(height: 18)
 
-            if viewModel.isTargetedForDrop {
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [8]))
-                    .background(Color.accentColor.opacity(0.08).clipShape(RoundedRectangle(cornerRadius: 12)))
-                    .padding(8)
-                    .allowsHitTesting(false)
-            }
-        }
-        .frame(minWidth: 820, minHeight: 580)
-        .task {
-            let cacheDir = URL.cachesDirectory.appending(path: "SermonOutlineCleanerDrops", directoryHint: .isDirectory)
-            await SermonWorkspaceViewModel.pruneOldCacheFiles(in: cacheDir)
-        }
-        .sheet(item: $viewModel.pendingLoad) { pending in
-            SpeakerPromptSheet(
-                filename: pending.fileURL.lastPathComponent,
-                speakerName: Binding(
-                    get: { viewModel.pendingLoad?.speakerInput ?? pending.speakerInput },
-                    set: { viewModel.pendingLoad?.speakerInput = $0 }
-                ),
-                onConfirm: { confirmedSpeaker in
-                    let url = pending.fileURL
-                    let fallback = pending.fallbackTitle
-                    viewModel.pendingLoad = nil
-                    viewModel.speaker = confirmedSpeaker
-                    runSermonProcessor(url: url, speakerOverride: confirmedSpeaker, fallbackTitle: fallback)
-                },
-                onCancel: {
-                    viewModel.pendingLoad = nil
-                }
-            )
-        }
-        .alert("Automation Permissions Reset", isPresented: $viewModel.showingResetPermissionAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("AppleEvents permissions for Sermon Outline Cleaner have been reset. Click \"Import to ProPresenter\" to be prompted for permission again.")
-        }
-        .alert("ProPresenter Automation Permission Disabled", isPresented: $viewModel.showingAutomationDeniedAlert) {
-            Button("Open System Settings & Reset") {
-                viewModel.resetAppleEventsPermission(showConfirmationAlert: false)
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            Button("Reset Permission Only") {
-                viewModel.resetAppleEventsPermission(showConfirmationAlert: true)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("macOS blocked Sermon Outline Cleaner from controlling ProPresenter (Error -1743). Click \"Open System Settings & Reset\" to re-enable it.")
-        }
-        .alert("Accessibility Permission Required", isPresented: $viewModel.showingAccessibilitySettingsAlert) {
-            Button("Open Accessibility Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("To click ProPresenter's File → Import menu automatically, please enable \"SermonOutlineCleaner\" in System Settings → Privacy & Security → Accessibility, then click Import again.")
-        }
-    }
+                            Text("Column Limit:")
+                                .fontWeight(.semibold)
 
-    // MARK: - Top Controls
+                            TextField("105", value: $maxLineChars, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 52)
+                                .multilineTextAlignment(.center)
+                                .onSubmit(reprocessIfLoaded)
 
-    private var headerControlsSection: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                Text("Save Directory:")
-                    .font(.subheadline.weight(.medium))
-                    .frame(width: 105, alignment: .trailing)
-
-                TextField("Output folder path", text: $viewModel.saveDirectoryPath)
-                    .textFieldStyle(.roundedBorder)
-
-                Button("Browse…") {
-                    selectOutputDirectory()
-                }
-
-                Button("Open File…") {
-                    openFilePicker()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-
-            HStack(spacing: 12) {
-                Text("Main Speaker:")
-                    .font(.subheadline.weight(.medium))
-                    .frame(width: 105, alignment: .trailing)
-
-                TextField("Speaker (MainSpeaker.txt)", text: $viewModel.speaker)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 230)
-                    .onSubmit { writeFilesToDisk() }
-
-                Text("Sermon Title:")
-                    .font(.subheadline.weight(.medium))
-
-                TextField("Title (SermonTitle.txt)", text: $viewModel.title)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { writeFilesToDisk() }
-            }
-
-            HStack(spacing: 12) {
-                Text("Max Line Length:")
-                    .font(.subheadline.weight(.medium))
-                    .frame(width: 105, alignment: .trailing)
-
-                Slider(value: $viewModel.maxLineLength, in: 65...150, step: 1) {
-                    Text("Max Line Length")
-                } onEditingChanged: { editing in
-                    if !editing, let lastURL = viewModel.lastLoadedFileURL {
-                        runSermonProcessor(
-                            url: lastURL,
-                            speakerOverride: viewModel.speaker,
-                            fallbackTitle: viewModel.lastLoadedFallbackTitle
-                        )
+                            Stepper("", value: $maxLineChars, in: 45...250, step: 5)
+                                .labelsHidden()
+                                .onChange(of: maxLineChars) { _, _ in
+                                    reprocessIfLoaded()
+                                }
+                        }
+                        Button("Update Speaker", action: applySpeakerChangeIfLoaded)
+                            .frame(width: 110)
+                            .disabled(viewModel.currentFileURL == nil)
                     }
                 }
-                .frame(maxWidth: 260)
+                .padding(6)
+            }
+            .fixedSize(horizontal: false, vertical: true)
 
-                Text("\(Int(viewModel.maxLineLength)) chars")
-                    .font(.system(.subheadline, design: .monospaced))
-                    .frame(width: 75, alignment: .leading)
+            // 2. Drag & Drop Zone / File Picker (Visual Banner)
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(
+                        viewModel.isTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
+                        style: StrokeStyle(lineWidth: 2, dash: [6])
+                    )
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(viewModel.isTargeted ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
+                    )
+
+                HStack(spacing: 16) {
+                    Image(systemName: "doc.badge.gearshape")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(viewModel.statusMessage)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                        Text("Supports Word (.docx), PowerPoint (.pptx), PDF (.pdf), Apple Mail (.eml), and Text (.txt)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if viewModel.currentFileURL != nil {
+                        Button("Re-Wrap (\(maxLineChars) ch)", action: reprocessIfLoaded)
+                            .controlSize(.large)
+                    }
+
+                    Button("Select Outline…", action: openFilePicker)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                }
+                .padding(.horizontal, 16)
+            }
+            .frame(height: 68)
+
+            // 3. 2x2 Read-Only Previews of Created Files
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    PreviewCard(
+                        title: "MainSpeaker.txt",
+                        badge: viewModel.previewSpeaker.isEmpty ? "—" : "1 line",
+                        text: viewModel.previewSpeaker
+                    )
+                    PreviewCard(
+                        title: "SermonTitle.txt",
+                        badge: viewModel.previewTitle.isEmpty ? "—" : "1 line",
+                        text: viewModel.previewTitle
+                    )
+                }
+                .frame(height: 78)
+
+                HStack(spacing: 12) {
+                    PreviewCard(
+                        title: viewModel.currentSermonTextFilename,
+                        badge: "\(viewModel.lineCount) lines • max \(maxLineChars) ch",
+                        text: viewModel.previewText
+                    )
+                    PreviewCard(
+                        title: "SermonScriptures.txt",
+                        badge: "\(viewModel.scriptureCount) scriptures",
+                        text: viewModel.previewScriptures
+                    )
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // 4. Footer Actions (Read-Only Previews)
+            HStack {
+                Button {
+                    revealInFinder()
+                } label: {
+                    Label("Reveal in Finder", systemImage: "folder")
+                }
 
                 Spacer()
 
                 Button {
-                    writeFilesToDisk()
-                } label: {
-                    Label("Save All Files", systemImage: "square.and.arrow.down")
-                }
-                .disabled(viewModel.sermonTextBody.isEmpty && viewModel.title.isEmpty)
-
-                Button {
                     importToProPresenter()
                 } label: {
-                    Label("Import to ProPresenter", systemImage: "play.rectangle.on.rectangle.fill")
+                    Label("Import to ProPresenter", systemImage: "play.display")
                 }
-                .disabled(viewModel.sermonTextBody.isEmpty && viewModel.title.isEmpty)
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.previewText.isEmpty)
             }
         }
-        .padding(12)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    // MARK: - Split Previews
-
-    private var previewPanesSection: some View {
-        HSplitView {
-            PreviewCard(
-                title: "Sermon Outline (\(viewModel.sermonTextFilename()))",
-                subtitle: "\(nonEmptyLineCount(viewModel.sermonTextBody)) lines",
-                icon: "doc.text",
-                text: viewModel.sermonTextBody
+        .padding(16)
+        .frame(minWidth: 760, minHeight: 560)
+        .overlay(
+            MailAwareDropView(
+                isTargeted: $viewModel.isTargeted,
+                onFileDropped: { url in
+                    handleIncomingFile(url)
+                },
+                onError: { errMsg in
+                    viewModel.statusMessage = errMsg
+                }
             )
-            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-
-            PreviewCard(
-                title: "Scripture References (SermonScriptures.txt)",
-                subtitle: "\(nonEmptyLineCount(viewModel.scripturesBody)) refs",
-                icon: "book.closed",
-                text: viewModel.scripturesBody
+        )
+        .sheet(item: $viewModel.pendingLoad) { item in
+            SpeakerPromptSheet(
+                defaultSpeaker: item.suggestedSpeaker,
+                onConfirm: { enteredSpeaker in
+                    viewModel.speakerName = enteredSpeaker
+                    viewModel.lastSavedSermonTextURL = nil
+                    viewModel.pendingLoad = nil
+                    runSermonProcessor(
+                        url: item.targetURL,
+                        speaker: enteredSpeaker,
+                        fallbackTitle: item.fallbackTitle
+                    )
+                },
+                onCancel: {
+                    viewModel.statusMessage = "Cancelled speaker name prompt."
+                    viewModel.pendingLoad = nil
+                }
             )
-            .frame(minWidth: 240, idealWidth: 290, maxWidth: 380, maxHeight: .infinity)
         }
-    }
-
-    // MARK: - Footer Status Bar
-
-    private var footerStatusBar: some View {
-        HStack {
-            if viewModel.isProcessing {
-                ProgressView()
-                    .controlSize(.small)
+        .alert("Permissions Reset", isPresented: $viewModel.showPermissionsResetAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Automation permissions for SermonOutlineCleaner have been reset.\n\nNext time you click \"Import to ProPresenter\", macOS will ask for permission again.")
+        }
+        .alert("ProPresenter Automation Blocked", isPresented: $viewModel.showAutomationBlockedAlert) {
+            Button("Reset Permissions") {
+                viewModel.resetAppleEventsPermission(showConfirmationAlert: false)
             }
-            Text(viewModel.statusMessage)
-                .font(.footnote)
-                .foregroundStyle(viewModel.isErrorStatus ? Color.red : Color.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            Spacer()
-
-            Text("Writes: MainSpeaker.txt • SermonTitle.txt • \(viewModel.sermonTextFilename()) • SermonScriptures.txt")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            Button("Open System Settings") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("SermonOutlineCleaner needs permission to launch ProPresenter and trigger the file import menu.\n\nClick \"Reset Permissions\" below, then click \"Import to ProPresenter\" again and select \"Allow\" when macOS prompts you.")
+        }
+        .onOpenURL { url in
+            handleIncomingFile(url)
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Actions & Dialogs
 
-    private func nonEmptyLineCount(_ s: String) -> Int {
-        s.split(whereSeparator: \.isNewline).count
+    private func commitActiveTextFields() {
+        NSApp.keyWindow?.makeFirstResponder(nil)
     }
 
     private func selectOutputDirectory() {
+        commitActiveTextFields()
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.prompt = "Select Output Folder"
-        panel.directoryURL = URL(filePath: viewModel.saveDirectoryPath)
+        panel.prompt = "Select Save Location"
+        panel.directoryURL = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
+
         if panel.runModal() == .OK, let url = panel.url {
-            viewModel.saveDirectoryPath = url.path(percentEncoded: false)
-            if !viewModel.sermonTextBody.isEmpty || !viewModel.title.isEmpty {
-                writeFilesToDisk()
-            }
+            saveDirectoryPath = url.path(percentEncoded: false)
+            viewModel.lastSavedSermonTextURL = nil
         }
     }
 
     private func openFilePicker() {
+        commitActiveTextFields()
+
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [
-            UTType(filenameExtension: "docx") ?? .data,
-            UTType(filenameExtension: "pptx") ?? .presentation,
-            UTType(filenameExtension: "ppt") ?? .presentation,
             .pdf,
+            .plainText,
             .emailMessage,
-            .plainText
+            .presentation,
+            UTType(filenameExtension: "docx") ?? .data,
+            UTType(filenameExtension: "pptx") ?? .data,
+            UTType(filenameExtension: "ppt") ?? .data,
+            UTType(filenameExtension: "eml") ?? .data
         ]
+
         if panel.runModal() == .OK, let url = panel.url {
             handleIncomingFile(url)
         }
     }
 
-    private func handleIncomingFile(_ url: URL) {
-        if SermonCleanerEngine.isEmlFile(url) {
-            let info = SermonCleanerEngine.inspectEmlFile(url)
-            let defaultSpk = info.sender
-                ?? (viewModel.speaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : viewModel.speaker)
+    private func handleIncomingFile(_ fileURL: URL) {
+        commitActiveTextFields()
+        NSApp.activate()
+        NSApp.windows.first?.makeKeyAndOrderFront(nil)
 
-            if !info.attachments.isEmpty {
-                promptForEmlSource(emlURL: url, info: info, defaultSpeaker: defaultSpk)
-                return
+        var targetURL = fileURL
+        let currentTypedSpeaker = viewModel.speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        var suggestedSpeaker = currentTypedSpeaker.isEmpty
+            ? SermonCleanerEngine.defaultSpeaker
+            : currentTypedSpeaker
+        var fallbackTitle: String? = nil
+
+        if SermonCleanerEngine.isEmlFile(fileURL) {
+            let inspection = SermonCleanerEngine.inspectEmlFile(fileURL)
+            if let sender = inspection.sender, !sender.isEmpty {
+                suggestedSpeaker = sender
             }
+            fallbackTitle = inspection.subject
 
-            viewModel.pendingLoad = PendingOutlineLoad(
-                fileURL: url,
-                fallbackTitle: info.subject,
-                speakerInput: defaultSpk
-            )
-            return
+            if !inspection.attachments.isEmpty {
+                guard let chosenURL = promptForEmlSource(emlURL: fileURL, attachments: inspection.attachments) else {
+                    viewModel.statusMessage = "Cancelled outline selection."
+                    return
+                }
+                targetURL = chosenURL
+            }
         }
 
-        let detectedAuthor = SermonCleanerEngine.extractDocumentAuthor(from: url)
-        let currentSpk = detectedAuthor
-            ?? (viewModel.speaker.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? SermonCleanerEngine.defaultSpeaker
-                : viewModel.speaker)
+        // If the target file is a Word/PowerPoint/PDF document with an Author metadata property,
+        // use that Author (with "Last, First" flipped to "First Last") as the suggested speaker.
+        if let docAuthor = SermonCleanerEngine.extractDocumentAuthor(from: targetURL), !docAuthor.isEmpty {
+            suggestedSpeaker = docAuthor
+        }
+
+        // Always present the Speaker Name prompt sheet on every file drop or selection
         viewModel.pendingLoad = PendingOutlineLoad(
-            fileURL: url,
-            fallbackTitle: nil,
-            speakerInput: currentSpk
+            targetURL: targetURL,
+            suggestedSpeaker: suggestedSpeaker,
+            fallbackTitle: fallbackTitle
         )
     }
 
-    private func promptForEmlSource(emlURL: URL, info: EmlInspection, defaultSpeaker: String) {
+    private func promptForEmlSource(emlURL: URL, attachments: [EmlAttachment]) -> URL? {
+        NSApp.activate()
+
         let alert = NSAlert()
-        alert.messageText = "Email Attachment Detected"
-        let names = info.attachments.map(\.filename).joined(separator: ", ")
-        alert.informativeText = "This email contains: \(names)\n\nWould you like to extract the sermon outline from the attachment or from the email body?"
+        alert.messageText = "Email Contains Attachments"
+        alert.informativeText = "Choose which element from \"\(emlURL.lastPathComponent)\" to parse for the sermon text:"
         alert.alertStyle = .informational
 
-        for att in info.attachments {
-            alert.addButton(withTitle: "Use Attachment (\(att.filename))")
+        for attachment in attachments {
+            alert.addButton(withTitle: "Attachment: \(attachment.filename)")
         }
-        alert.addButton(withTitle: "Use Email Body")
+        alert.addButton(withTitle: "Email Body Text")
         alert.addButton(withTitle: "Cancel")
 
         let response = alert.runModal()
-        let firstButtonRaw = NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
-        let index = response.rawValue - firstButtonRaw
+        let index = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
 
-        if index >= 0 && index < info.attachments.count {
-            let chosen = info.attachments[index]
-            let tempDir = URL.cachesDirectory.appending(path: "SermonOutlineCleanerDrops", directoryHint: .isDirectory)
+        if index >= 0 && index < attachments.count {
+            let chosen = attachments[index]
+            let tempDir = FileManager.default.temporaryDirectory.appending(path: "SermonCleanerAttachments", directoryHint: .isDirectory)
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            let savedURL = tempDir.appending(path: chosen.filename)
+            let tempFileURL = tempDir.appending(path: chosen.filename)
             do {
-                try chosen.data.write(to: savedURL, options: .atomic)
-                let attachmentAuthor = SermonCleanerEngine.extractDocumentAuthor(from: savedURL) ?? defaultSpeaker
-                viewModel.pendingLoad = PendingOutlineLoad(
-                    fileURL: savedURL,
-                    fallbackTitle: info.subject,
-                    speakerInput: attachmentAuthor
-                )
+                try chosen.data.write(to: tempFileURL, options: .atomic)
+                return tempFileURL
             } catch {
-                viewModel.statusMessage = "Error saving attachment: \(error.localizedDescription)"
-                viewModel.isErrorStatus = true
+                viewModel.statusMessage = "⚠️ Could not extract attachment: \(error.localizedDescription)"
+                return nil
             }
-        } else if index == info.attachments.count {
-            viewModel.pendingLoad = PendingOutlineLoad(
-                fileURL: emlURL,
-                fallbackTitle: info.subject,
-                speakerInput: defaultSpk(defaultSpeaker)
-            )
+        } else if index == attachments.count {
+            return emlURL
+        } else {
+            return nil
         }
     }
 
-    private func defaultSpk(_ spk: String) -> String { spk }
+    private func applySpeakerChangeIfLoaded() {
+        commitActiveTextFields()
+        guard viewModel.currentFileURL != nil else { return }
+        reprocessIfLoaded()
+    }
 
-    private func runSermonProcessor(url: URL, speakerOverride: String, fallbackTitle: String?) {
-        viewModel.isProcessing = true
-        viewModel.isErrorStatus = false
-        viewModel.lastLoadedFileURL = url
-        viewModel.lastLoadedFallbackTitle = fallbackTitle
-        viewModel.statusMessage = "Processing \(url.lastPathComponent)…"
+    private func reprocessIfLoaded() {
+        commitActiveTextFields()
+        guard let url = viewModel.currentFileURL else { return }
+        let activeSpeaker = viewModel.speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedSpeaker = activeSpeaker.isEmpty
+            ? (viewModel.previewSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : viewModel.previewSpeaker)
+            : activeSpeaker
+        runSermonProcessor(url: url, speaker: resolvedSpeaker, fallbackTitle: viewModel.currentFallbackTitle)
+    }
 
-        let maxChars = Int(viewModel.maxLineLength)
-        let spk = speakerOverride
+    private func runSermonProcessor(url: URL, speaker: String, fallbackTitle: String?) {
+        viewModel.currentFileURL = url
+        viewModel.currentFallbackTitle = fallbackTitle
+        let limit = maxLineChars
 
         Task {
             do {
-                let hasSecurityScope = url.startAccessingSecurityScopedResource()
-                defer {
-                    if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
-                }
-
                 let result = try await SermonWorkspaceViewModel.processOutlineInBackground(
-                    fileURL: url,
-                    speaker: spk,
-                    maxLineChars: maxChars,
+                    url: url,
+                    speaker: speaker,
+                    maxLineChars: limit,
                     fallbackTitle: fallbackTitle
                 )
 
-                viewModel.speaker = result.speaker
-                viewModel.title = result.title
-                viewModel.sermonTextBody = result.lines.joined(separator: "\n")
-                viewModel.scripturesBody = result.scriptures.joined(separator: "\n")
-                viewModel.isProcessing = false
+                viewModel.previewSpeaker = result.speaker
+                viewModel.previewTitle = result.title
+                viewModel.previewText = result.lines.joined(separator: "\n")
+                viewModel.previewScriptures = result.scriptures.joined(separator: "\n")
 
-                writeFilesToDisk(loadedFromFilename: url.lastPathComponent)
+                viewModel.lineCount = result.lines.count
+                viewModel.scriptureCount = result.scriptures.count
+
+                let savedFilename = try writeFilesToDisk(
+                    speaker: result.speaker,
+                    title: result.title,
+                    textBody: viewModel.previewText,
+                    scripturesBody: viewModel.previewScriptures
+                )
+                let abbreviatedDir = (saveDirectoryPath as NSString).abbreviatingWithTildeInPath
+                viewModel.statusMessage = "✓ Saved \(savedFilename) to \(abbreviatedDir)"
             } catch {
-                viewModel.isProcessing = false
-                viewModel.isErrorStatus = true
-                viewModel.statusMessage = "Error processing \(url.lastPathComponent): \(error.localizedDescription)"
+                viewModel.statusMessage = "⚠️ Error: \(error.localizedDescription)"
             }
         }
     }
 
     @discardableResult
-    private func writeFilesToDisk(loadedFromFilename: String? = nil) -> Bool {
-        do {
-            let written = try SermonFileWriter.writeOutputFiles(
-                to: viewModel.saveDirectoryPath,
-                speaker: viewModel.speaker,
-                title: viewModel.title,
-                textBody: viewModel.sermonTextBody,
-                scripturesBody: viewModel.scripturesBody,
-                previousSermonTextURL: viewModel.lastWrittenSermonTextURL
-            )
-            viewModel.lastWrittenSermonTextURL = written.fileURL
-            viewModel.isErrorStatus = false
+    private func writeFilesToDisk(
+        speaker: String,
+        title: String,
+        textBody: String,
+        scripturesBody: String
+    ) throws -> String {
+        let written = try SermonFileWriter.writeOutputFiles(
+            to: saveDirectoryPath,
+            speaker: speaker,
+            title: title,
+            textBody: textBody,
+            scripturesBody: scripturesBody,
+            previousSermonTextURL: viewModel.lastSavedSermonTextURL
+        )
+        viewModel.lastSavedSermonTextURL = written.fileURL
+        return written.filename
+    }
 
-            if let src = loadedFromFilename {
-                viewModel.statusMessage = "✓ Processed \"\(src)\" → Saved \(written.filename) + 3 files to \(viewModel.saveDirectoryPath)"
-            } else {
-                viewModel.statusMessage = "✓ Saved MainSpeaker.txt, SermonTitle.txt, \(written.filename), SermonScriptures.txt to \(viewModel.saveDirectoryPath)"
-            }
-            return true
-        } catch {
-            viewModel.isErrorStatus = true
-            viewModel.statusMessage = "Failed to write output files: \(error.localizedDescription)"
-            return false
+    private func revealInFinder() {
+        let outDir = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
+        let sermonTextURL = outDir.appending(path: viewModel.currentSermonTextFilename)
+        if !viewModel.previewText.isEmpty && FileManager.default.fileExists(atPath: sermonTextURL.path(percentEncoded: false)) {
+            NSWorkspace.shared.activateFileViewerSelecting([sermonTextURL])
+        } else {
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: saveDirectoryPath)
         }
     }
 
-    // MARK: - ProPresenter Import Automation
-
     private func importToProPresenter() {
-        // 1. Ensure all 4 sermon files are saved to disk first
-        guard writeFilesToDisk() else { return }
-
-        // 2. Check Accessibility permission first (required for System Events menu/keystroke automation)
+        commitActiveTextFields()
         guard ProPresenterAutomator.isAccessibilityTrusted(promptIfNeeded: true) else {
-            viewModel.isErrorStatus = true
-            viewModel.statusMessage = "⚠️ Accessibility permission required to automate ProPresenter's Import dialog."
-            viewModel.showingAccessibilitySettingsAlert = true
+            viewModel.statusMessage = "⚠️ Please enable SermonOutlineCleaner in System Settings > Privacy & Security > Accessibility, then click Import again."
             return
         }
 
-        let targetFilename = viewModel.sermonTextFilename()
-        let outDir = URL(filePath: viewModel.saveDirectoryPath, directoryHint: .isDirectory)
-        let sermonFileURL = outDir.appending(path: targetFilename)
-        let sermonFilePath = sermonFileURL.path(percentEncoded: false)
+        let targetFilename = (try? writeFilesToDisk(
+            speaker: viewModel.previewSpeaker,
+            title: viewModel.previewTitle,
+            textBody: viewModel.previewText,
+            scripturesBody: viewModel.previewScriptures
+        )) ?? viewModel.currentSermonTextFilename
 
-        // 3. Locate ProPresenter.app
+        let sermonFilePath = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
+            .appending(path: targetFilename)
+            .path(percentEncoded: false)
+
         guard let proAppURL = ProPresenterAutomator.locateProPresenterApplication() else {
-            viewModel.isErrorStatus = true
-            viewModel.statusMessage = "⚠️ ProPresenter.app was not found in /Applications."
+            viewModel.statusMessage = "⚠️ Could not find ProPresenter.app in /Applications."
             return
         }
 
-        viewModel.isErrorStatus = false
-        viewModel.statusMessage = "Launching ProPresenter and importing \(targetFilename)…"
+        viewModel.statusMessage = "⏳ Launching ProPresenter and waiting for main window…"
 
         Task {
             let outcome = await ProPresenterAutomator.importSermonFile(
@@ -438,14 +455,11 @@ struct ContentView: View {
             )
             switch outcome {
             case .success(let message):
-                viewModel.isErrorStatus = false
                 viewModel.statusMessage = message
             case .automationPermissionDenied:
-                viewModel.isErrorStatus = true
-                viewModel.statusMessage = "⚠️ macOS Automation permission is disabled for System Events."
-                viewModel.showingAutomationDeniedAlert = true
+                viewModel.statusMessage = "⚠️ Automation permission denied (-1743)."
+                viewModel.showAutomationBlockedAlert = true
             case .message(let errorMessage):
-                viewModel.isErrorStatus = true
                 viewModel.statusMessage = errorMessage
             }
         }
