@@ -272,8 +272,8 @@ nonisolated enum EmailMimeParser {
 
             var current = first
             for nxt in sublines.dropFirst() {
-                let currClean = current.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
-                let nxtClean = nxt.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespaces)
+                let currClean = stripEmailInlineMarkup(current)
+                let nxtClean = stripEmailInlineMarkup(nxt)
 
                 let currIsRef = RegexCache.firstMatch(currClean, pattern: ScriptureReferenceKit.standaloneRefPattern) != nil
                 let nxtIsRef = RegexCache.firstMatch(nxtClean, pattern: ScriptureReferenceKit.standaloneRefPattern) != nil
@@ -286,9 +286,39 @@ nonisolated enum EmailMimeParser {
                     current = "\(current) \(nxt)"
                 }
             }
-            if !current.isEmpty { logicalLines.append(current) }
+            if !current.isEmpty {
+                // Rejoin wrapped outline point continuations across a blank line
+                // (e.g. "*2. We Believe God's Promises even when we Cannot see them  *\n\n*    Fulfilled.*")
+                if let prev = logicalLines.last {
+                    let prevClean = stripEmailInlineMarkup(prev)
+                    let currClean = stripEmailInlineMarkup(current)
+                    let prevIsUnfinishedPoint = RegexCache.firstMatch(
+                        prevClean,
+                        pattern: "^(?:[IVX]{1,4}|[A-Z]|\\d{1,2})[.)]\\s+.*[^.?!:;]$",
+                        caseInsensitive: false
+                    ) != nil
+                    let currIsRef = RegexCache.firstMatch(currClean, pattern: ScriptureReferenceKit.standaloneRefPattern) != nil
+                        || RegexCache.firstMatch(currClean, pattern: "^\\(?(\(ScriptureReferenceKit.booksRegex))\\.?\\s*\(ScriptureReferenceKit.chapterVersePattern)") != nil
+                    let currIsOutlinePoint = RegexCache.firstMatch(
+                        currClean,
+                        pattern: "^(?:[IVX]{1,4}|[A-Z]|\\d{1,2})[.)]\\s+",
+                        caseInsensitive: false
+                    ) != nil
+
+                    if prevIsUnfinishedPoint && !currIsRef && !currIsOutlinePoint && currClean.split(separator: " ").count <= 4 {
+                        logicalLines[logicalLines.count - 1] = "\(prev) \(current)"
+                        continue
+                    }
+                }
+                logicalLines.append(current)
+            }
         }
         return logicalLines
+    }
+
+    private static func stripEmailInlineMarkup(_ line: String) -> String {
+        let withoutURLs = RegexCache.replace(line, pattern: "<(?:https?|mailto):[^>]+>", template: "", caseInsensitive: true)
+        return withoutURLs.replacingOccurrences(of: "*", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     static func cleanEmailSubject(_ subjectRaw: String) -> String {

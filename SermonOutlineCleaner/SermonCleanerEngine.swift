@@ -311,6 +311,9 @@ nonisolated final class SermonCleanerEngine: Sendable {
         activeRef: String? = nil,
         prevLineContinues: Bool = false
     ) -> Bool {
+        if RegexCache.firstMatch(line, pattern: "^\\(?(\(ScriptureReferenceKit.booksRegex))\\.?\\s*\(ScriptureReferenceKit.chapterVersePattern)") != nil {
+            return false
+        }
         if let numbered = RegexCache.firstMatch(line, pattern: "^(\\d{1,3})[.)]\\s+(.*)$", caseInsensitive: false) {
             if let num = Int(numbered[1]),
                ScriptureReferenceKit.verseNumbersInReference(activeRef).contains(num) {

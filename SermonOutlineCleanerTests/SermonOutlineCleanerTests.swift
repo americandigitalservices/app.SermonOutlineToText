@@ -60,6 +60,10 @@ struct SermonOutlineCleanerTests {
         let footnoteAndAcronym = "a long way[b] from the land,[c] HOW TO L.I.S.T.E.N. TO GOD"
         #expect(SermonCleanerEngine.cleanBasicTypography(footnoteAndAcronym) == "a long way from the land, HOW TO L.I.S.T.E.N. TO GOD")
 
+        // Angle-bracketed hyperlink URLs from plain-text email conversion
+        let hyperlinkedRef = "*2 Corinthians 12:10* <http://www.crossbooks.com/verse.asp?ref=2Co+12%3A10>"
+        #expect(SermonCleanerEngine.cleanBasicTypography(hyperlinkedRef) == "2 Corinthians 12:10")
+
         let finalCleaned = SermonCleanerEngine.applyFinalCotEditorCleanup([basicCleaned])
         #expect(finalCleaned == ["\"God's Word\" - 1-3"])
     }
@@ -83,7 +87,7 @@ struct SermonOutlineCleanerTests {
         #expect(vm.sermonTextFilename(title: "") == "Sermon-Untitled.txt")
     }
 
-    @Test("TestFiles directory contains all 11 sample files and processes each without errors", arguments: allTestFileURLs())
+    @Test("TestFiles directory contains all 12 sample files and processes each without errors", arguments: allTestFileURLs())
     func processEveryFileInTestFilesDirectory(fileURL: URL) throws {
         #expect(FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)))
 
@@ -126,7 +130,55 @@ struct SermonOutlineCleanerTests {
         #expect(result.lines.allSatisfy { $0.count <= 105 })
     }
 
-    @Test("TestFiles regression checks for all 9 parsing improvements")
+    @Test("Over Head 4 EML parses hyperlinked scriptures, indented continuations, and all 10 references")
+    func overHead4EmlParsing() throws {
+        let emlURL = Self.testFilesDirectory.appending(path: "[CHFC Media] Over Head 4.eml")
+        let inspection = SermonCleanerEngine.inspectEmlFile(emlURL)
+        #expect(inspection.sender == "Ernest Fink")
+        #expect(inspection.subject == nil) // "[CHFC Media] Over Head" is a generic subject
+        #expect(inspection.attachments.isEmpty)
+
+        let result = try SermonCleanerEngine.processSermonFile(
+            url: emlURL,
+            speaker: inspection.sender ?? SermonCleanerEngine.defaultSpeaker,
+            maxLineChars: 105,
+            fallbackTitle: inspection.subject
+        )
+
+        #expect(result.speaker == "Ernest Fink")
+        #expect(result.title == "Strength That Never Fails")
+
+        // Hyperlinked scripture "*2 Corinthians 12:10* <http://www.crossbooks.com/verse.asp?ref=2Co+12%3A10>"
+        // must be parsed as its own scripture reference, without leaking the URL or merging into Philippians 4:13
+        #expect(result.lines.contains("2 Corinthians 12:10 - For when I am weak, then am I strong"))
+        #expect(!result.lines.contains(where: { $0.contains("crossbooks.com") || $0.contains("http") }))
+
+        // Wrapped outline point across blank line ("*2. We Believe God's Promises even when we Cannot see them  *\n\n*    Fulfilled.*")
+        #expect(result.lines.contains("2. We Believe God's Promises even when we Cannot see them Fulfilled."))
+        #expect(!result.lines.contains("Fulfilled."))
+
+        // Multi-line indented scripture ("*Hebrews 11:1\n\n   *Now *Faith* is...")
+        #expect(result.lines.contains("Hebrews 11:1 - Now Faith is the substance of things Hoped for, the Evidence of things Not seen."))
+
+        // Parenthesized translation with colon ("*2 Corinthians 4:17* (*KJV): *")
+        #expect(result.lines.contains("2 Corinthians 4:17 (KJV) - For our light affliction, which is but for a moment,"))
+        #expect(result.lines.contains("2 Corinthians 4:17 (KJV) - worketh for us a far more exceeding and eternal weight of glory."))
+
+        #expect(result.scriptures == [
+            "Psalm 73:26 (ESV)",
+            "2 Corinthians 4:16 (NKJV)",
+            "2 Corinthians 4:18 (NKJV)",
+            "Philippians 4:13 (ESV)",
+            "2 Corinthians 12:10",
+            "Romans 10:17",
+            "2 Corinthians 5:7",
+            "Hebrews 11:1",
+            "2 Corinthians 4:17 (KJV)",
+            "Colossians 3:2 (KJV)"
+        ])
+    }
+
+    @Test("TestFiles regression checks for all parsing improvements")
     func testFilesSpecificParsingImprovements() throws {
         let dir = Self.testFilesDirectory
 

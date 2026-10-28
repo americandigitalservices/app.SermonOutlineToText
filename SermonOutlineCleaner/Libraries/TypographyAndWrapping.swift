@@ -90,6 +90,8 @@ nonisolated enum TypographyAndWrapping {
         // 3. Smart quotes to straight quotes
         text = text.replacingOccurrences(of: "“", with: "\"").replacingOccurrences(of: "”", with: "\"")
         text = text.replacingOccurrences(of: "‘", with: "'").replacingOccurrences(of: "’", with: "'")
+        // 3b. Strip angle-bracketed hyperlink URLs inserted by plain-text email clients (e.g. <http://www.crossbooks.com/...>)
+        text = RegexCache.replace(text, pattern: "<(?:https?|mailto):[^>]+>", template: "", caseInsensitive: true)
         // 4. Remove any asterisks first so "* · Text" or "· *Text" exposes the leading bullet
         text = text.replacingOccurrences(of: "*", with: "")
         // 5. CotEditor rule: Strip leading bullets (including middle dot · \u{00B7}), hyphens, dashes, arrows, and list markers

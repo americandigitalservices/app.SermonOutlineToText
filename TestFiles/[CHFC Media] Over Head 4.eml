@@ -1,0 +1,490 @@
+Delivered-To: dan.horning@cityharvestalbany.com
+Received: by 2002:a05:7208:62a6:b0:10d:d95f:3f2e with SMTP id o6csp582052rbn;
+        Tue, 27 Oct 2026 10:54:33 -0700 (PDT)
+X-Forwarded-Encrypted: i=5; AKwUvBxqOguFyQiGi7FscGIdPup76aYZRjm+mOzI2cI9XjXLjEilKgBDuw2wxZKd7GlEL2FSjbdys6lDAp9c8Q==@cityharvestalbany.com
+X-Received: by 2002:a05:6830:650f:b0:7fa:5c49:523e with SMTP id 46e09a7af769-85ac0ce8d81mr153096a34.23.1793123672990;
+        Tue, 27 Oct 2026 10:54:32 -0700 (PDT)
+ARC-Seal: i=4; a=rsa-sha256; t=1793123672; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=mgXp3xzRkK80DFeu7igQgPvTBJ3oMj1g8cP6uX8vFolg5UpXt/zh8BebSXT16zvgKi
+         saZfz9unGDdqGj7GdVZhZRUj1VM0oqJvlr6aja/irEd8AsULRiBpJCB9lpJr2Wel3v6Q
+         Ps1yhYznc2c3XcOTsPHLaKw/7cGIV+mnNVfXIvkhcZ3+IQAI9IvfzFXm44Q6FIPGaoiz
+         zl3fKW9aXimgDd77Jubh4in97uP4fuI9GPRvL7iRRpoxv060ffxlJDynq6pLgSkm8dtu
+         9ltxipQuFodmSj0DKefwiHkH3P6Hes7h8sdjtrB3BIHcJ9V21AnG4UucaV5b8fzA/xk5
+         B/Pg==
+ARC-Message-Signature: i=4; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=qiutyWUcRYJ/VvgpASbGg0lPtROEFPVg3JvluI59LKY=;
+        fh=rWfgwYdLo39ncqHgv3BqX4rV+a0YYpRxdy7ZWjzn1f4=;
+        b=d7MGdasLv6G6sMqqB4QbRtGskRdY9A0gUgC93bn6BD99ZogSYrG48bwkTHHWnSBZ+S
+         RBpoiUKJjhASR3fun9UU1LXjZ9FvRGnYsGcNGu3PZ5Q1iWhdgQTSnuxqI7G3Zg/5D30C
+         ZFNc3I4YPhNVhdV4iBhTWt9ttBBwd0R56qys3M6FR8rjtHd7Ry6NTS+RXtSil9ETW/xz
+         00DuJ4Mzeqh9QgCw5nSYZCxm7PKo4Qldqm97w+PzUEsbojEdM5cUtMdGeV3FoGNVaTxg
+         4OrMtp3vFnWJqu0ytbotqIpXO+519+bAL6B1DcWJI2nISDYwNBhUBVC+vt1wltmO5KcW
+         nWXg==;
+        dara=google.com
+ARC-Authentication-Results: i=4; mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20260707.gappssmtp.com header.s=20260707 header.b="r/zQnBkw";
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbwgkqplqmgqeykq3ibq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBWGKQPLQMGQEYKQ3IBQ@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Return-Path: <mediateam+bncBDTIPMMHX4HBBWGKQPLQMGQEYKQ3IBQ@cityharvestalbany.com>
+Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+        by mx.google.com with SMTPS id 46e09a7af769-85aa6b06f19sor411051a34.5.2026.10.27.10.54.32
+        for <dan.horning@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 27 Oct 2026 10:54:32 -0700 (PDT)
+Received-SPF: pass (google.com: domain of mediateam+bncbdtipmmhx4hbbwgkqplqmgqeykq3ibq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@cityharvestalbany-com.20260707.gappssmtp.com header.s=20260707 header.b="r/zQnBkw";
+       arc=pass (i=3 spf=pass spfdomain=gmail.com dkim=pass dkdomain=gmail.com dmarc=pass fromdomain=gmail.com);
+       spf=pass (google.com: domain of mediateam+bncbdtipmmhx4hbbwgkqplqmgqeykq3ibq@cityharvestalbany.com designates 209.85.220.69 as permitted sender) smtp.mailfrom=mediateam+bncBDTIPMMHX4HBBWGKQPLQMGQEYKQ3IBQ@cityharvestalbany.com;
+       dmarc=fail (p=NONE sp=QUARANTINE dis=NONE arc=pass) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+ARC-Seal: i=3; a=rsa-sha256; t=1793123672; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=EVm29EwL8uNqfNKx5h3daqKkXderf3rJwIjXkbIcYna4aISz6zT8E8LE5df4+r+Paw
+         jAU4wR8+t50CzF4rY9HqP7xv5lRJGLqov0siHuf16flVBxfFilZrgeC4NxO3rY838SNt
+         pQstebId+SG6fLukgkmbkgprMnAULso44YanUrbmJxynBiG6OpxGaWNzpQF7x1EAzC1Q
+         BszGeUyO8ubOrw76n2774mrEId8aNEdTAyBdFhDjj9d0VpbNGPc2vSV3tKEbaBsS343X
+         6+HmEM7msv6m/q+QbAaF154mK8u9OAV8q0EsIcoQOgpTWE7FKP4OQqKoP0rLbgZb3GeT
+         RFdw==
+ARC-Message-Signature: i=3; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:to:subject:message-id:date:from
+         :mime-version:dkim-signature;
+        bh=qiutyWUcRYJ/VvgpASbGg0lPtROEFPVg3JvluI59LKY=;
+        fh=rWfgwYdLo39ncqHgv3BqX4rV+a0YYpRxdy7ZWjzn1f4=;
+        b=m2v+VllUEixph26Td90jcqvp8480ZiEkFuFxadaYtl1p4l99UKpK3RWILpJQVJmTbT
+         +zOhL14jEnxCm5VNrEHNlbsxjhpK/CAz6q5KvXeGbWSCKFK77mpojgWehzyFo8QFKvXH
+         DFZ+AsEr3cTcp0Xi63Rrkseeh0bVlwDUKWIOYFVRw49pSZzYfArGg3CtIJF/QvLmiJxp
+         xFmCb17tIHatuWBf8f6C9GbsDUwcDGUI1LTs7AQ4x4FUBziF3BkRhWgrxgVjdkZD70SB
+         OyW+xLDebOCdr4VSAV257w6k6fOeamHJC+id2YId8sLrw7/tmop6kKcQH0CGyufdNRiI
+         aPdg==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=3; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20260707 header.b=OinBErKT;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=cityharvestalbany-com.20260707.gappssmtp.com; s=20260707; t=1793123672; x=1793728472; darn=cityharvestalbany.com;
+        h=list-unsubscribe:list-archive:list-help:list-post:list-id
+         :mailing-list:precedence:reply-to:x-original-authentication-results
+         :x-original-sender:content-type:to:subject:message-id:date:from
+         :mime-version:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=qiutyWUcRYJ/VvgpASbGg0lPtROEFPVg3JvluI59LKY=;
+        b=r/zQnBkwrKRLpw/PxcHtu5Wcx9bKwZebA2eG65qywjnqwoGPefGbGrUcwGJqscylWn
+         sC3TcGfH/e88dT+tPEx/ZIKigRQ1khIaD9B/Vq2XIoDT+i1qjXg4TKD+HsMzBWPmxssW
+         pgU6XNe4T8VXZSC1jEZwFGvu03y2so6RMaPsdr3RScUjk9IIRZxCMc6owaHJUGFCxywn
+         5gBfnnrUd6A/s9a39vrSRwYe7VkDH/PzrWJybcyG18Vi31VnuahkKB/GHcpN+ItPfexR
+         tJePuEnPRf44+Ef0LGF1kjpfPMe4Y8n5Cv8rBH9zdkIBa0iVrYz/elvCBqOcdUHeIn0w
+         Q96g==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1793123672; x=1793728472;
+        h=list-unsubscribe:list-archive:list-help:list-post
+         :x-spam-checked-in-group:list-id:mailing-list:precedence:reply-to
+         :x-original-authentication-results:x-original-sender:content-type:to
+         :subject:message-id:date:from:mime-version:x-gm-gg:x-beenthere
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=qiutyWUcRYJ/VvgpASbGg0lPtROEFPVg3JvluI59LKY=;
+        b=xE8ZHne1bQXsKcQzz03IrgsJqv5OmApOaBt//HjaIGANQK5dgQj3Q3Ig4kRo/ptzZz
+         v0lidoAMJ137vbeDPnavah207HVnh43/gKb4cM7UPKWFjKJuA15ITAuCXE4go+DXlbbl
+         A5eGcgnCGOm9+vYCHOmCNCgxuHgDj0VZXAS/LMIJAwTp46M7VUNS8zN0WW2sw8UzaxBs
+         8Q4l5Tg5xvN8UlQ1wOuSk4/+DAzinqqagms99ZJiTm+IUlJz0LRXi0hz1UE0ujXpasZw
+         XXbnGJiQLsFOuZTVDMk2wTDhycDQWbBOncb/e0u1nvbZKNQo9r94KONBvpUMaW1cd9nl
+         PedA==
+X-Forwarded-Encrypted: i=3; AKwUvBxlBt0PhOiCWypIPI+ml2dyelHWgR4FQEbvc7OxRhsk951Q2T1pphRMtYHKvnBiGZ5iwX4OdNlFQeOwiw==@cityharvestalbany.com
+X-Gm-Message-State: AFq9FYIRQMeauu6RDA8/udX3xtcFuTaXONkX2flyMI8euuwNQxZDaCQU
+	aGyB/+DZg9UFoEDO7Xq+6/M+Vt31qoNKZW2HVq+d+GeVtji1fEii9opw/FXX5muik9/G3VjfmlQ
+	ttA==
+X-Received: by 2002:a05:6820:2226:b0:70d:ae12:71b7 with SMTP id 006d021491bc7-70dae21b99dmr4706259eaf.59.1793123672332;
+        Tue, 27 Oct 2026 10:54:32 -0700 (PDT)
+X-BeenThere: mediateam@cityharvestalbany.com; h="ATskLdfjqH61eos3vciXY0b7GZH0+b7PAYWD/OjxiP9ywDL2gA=="
+Received: by 2002:a05:6820:3407:20b0:70c:bf79:3e77 with SMTP id
+ 006d021491bc7-713bd8c4019ls146557eaf.0.-pod-prod-03-us; Tue, 27 Oct 2026
+ 10:54:31 -0700 (PDT)
+X-Forwarded-Encrypted: i=3; AKwUvBzhJEnL9wRxiVaewgYH2nKSqWY4hodheHJGIuMQErQKpCwkxLZX0yEgulgcrcMTS6SXwnSU3P27KXo=@cityharvestalbany.com
+X-Received: by 2002:a05:6820:458e:b0:710:8db7:5f57 with SMTP id 006d021491bc7-7108db7822amr2760128eaf.78.1793123671779;
+        Tue, 27 Oct 2026 10:54:31 -0700 (PDT)
+ARC-Seal: i=2; a=rsa-sha256; t=1793123671; cv=pass;
+        d=google.com; s=arc-20260327;
+        b=hKtUMszkUzYle3lrKftoiZAiw7nz9XCyuoFSFpZdYjTHcp2qogMgnlbITHxy8cu0jB
+         Aqvflc/Bs/XIC8OPma6R7QUNQQ1pRf8BmJ6zI0IvkYW42hVybBHVcNKygD91YxTHnCen
+         lllHzfGgNiWyE47KPRrK255Zh2zPurvaMWasXY40hD5o/Yj/yiyWQk17IaeQfmbTav+D
+         gZKJjRkKybRNPFXOQEt0opYmjCTcU6zwDL4m3cZ2XHQRlb7eCP+HpLDAZUjiQrhisKhz
+         hyTkPObXmkKqYODbhNsNzm0pPli08FhU3zs51xFvyRON4cQ4fcCKN1JyBZmQ4DKC/R2A
+         TiRQ==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=wf2rARCx1f0IXWAHLQ+78Cl2hebJhOyGFCGeZYNoS9I=;
+        fh=QZ3zN2XAknPbn8Vv5+BeX6aP0+1xjmjswDooxeikeiQ=;
+        b=AAJoEGYr9QqI5EifU+WV+qoG0Ny4jTdwEsiGqv7YmU5VZ+X4791WTvQBLsXAw9rvf7
+         veWrIdprzQb7yRUJN4qmlnXvGx3aN18bzOD7vqf6SlyHMH4rI0CQQJGE5kMLLhZ9b7lD
+         0OxNeJGVMY1u/HlLBhg+UJ6WKFSVGfMUtLAdOxqTyR62DXtOzciBN4w0XLMSCwdgDg9b
+         4WzBYfzxRJmF6D4l+hWHwFp9LepW544Dg5anpsjdubXicCQBtreblDd+St3hZtLULBkh
+         2nvy+U3p0MigsIddC0ey8zrvS0tWkUT7Hh5xCa/LaV/OpZ5x6ZrtV21KXmxaisg1So9S
+         6DRA==;
+        dara=google.com
+ARC-Authentication-Results: i=2; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20260707 header.b=OinBErKT;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 586e51a60fabf-4a8b7449e91sor557131fac.2.2026.10.27.10.54.31
+        for <mediateam@cityharvestalbany.com>
+        (Google Transport Security);
+        Tue, 27 Oct 2026 10:54:31 -0700 (PDT)
+Received-SPF: pass (google.com: domain of ernestfink@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+ARC-Seal: i=1; a=rsa-sha256; t=1793123671; cv=none;
+        d=google.com; s=arc-20260327;
+        b=lHzDfzrzENMlV/bjXVtX5q+L8o9aJvWNLiwMzej57v2QNidr1uYezLjVsMUfDrN1tr
+         Y9jSDF4GYT0kEsSTxFi393TkvlNkceF8pUzTDPZoj5cdpHX3uyzYL+ExWorjyCqQFd38
+         w83ADrKrHoKBessl8YdICBZukjRJv0GRLb9InvNbkRL0HGM6BchKd3qrlzxDSdKuEbuJ
+         /UR3fQIYb8hk3+hHii+q3hLaKhEbEjjvO+ItJFjVs0V9oSMjCDiCT0gbCGC+yG2WsnqE
+         hLpVxx8+bgch7iaAZAzG57tETzr88d+46RbHzf+hZ+v9JbCPTcAPbDdOR+SH1NbBNp5d
+         oopQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=wf2rARCx1f0IXWAHLQ+78Cl2hebJhOyGFCGeZYNoS9I=;
+        fh=QZ3zN2XAknPbn8Vv5+BeX6aP0+1xjmjswDooxeikeiQ=;
+        b=TW6dJQNEbnWQ8OVrKfzglauIcnQ3R1EBVl5G4Lbgq0g1zYfBBefyrRbU1xi6hjXJ4N
+         d+Ai0xE92xuXtnkaxQj0KzdMyuEHwlXxZPuYXbtx3Lh+s0+32+63zSTMIzEjXmMUyr0G
+         tCg1CZXBXRhP9jUppG73IRWS/D7Z3en1xtovDdtqvy4uBGHZFlyUemHynsjY3JQjm6im
+         3Ox4UwQsJ10uZy3MeoZKtufjExZH4j4PhmuIx6dX/8ih0vuYHVmI65vh+WDG1MWy+oQW
+         qI9sxeRBjiiqok5SdbJD9bVC2ckKcTh5MBkBo/X6BV53WRV9mCocP+Xc/sAFXMlbIp4V
+         zNcQ==;
+        darn=cityharvestalbany.com
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+X-Forwarded-Encrypted: i=1; AKwUvByagtWnJsD8BB3LsOxgPu1ZCrzzSD8HlSlVBlcSmuuMqvgMIm/XumNQ8m47eiO8hz1n88C0TvIWYgQ=@cityharvestalbany.com
+X-Gm-Gg: AYBFou0EXE8B9pShu70B7Ls1K4vEIoG0N6LKK2CFyB502y8dm4HbyJy716tz8lEUv8k
+	baeFCAKWZxdw3lnjPenopVjRMvcpm6zscsP0+UkwTIIIDJKDXq6FMp7itb7EUN7olGekZhNZSNn
+	Z1bIt3/9SQU++gsEvFLTW7jfgYMgGKvloK+hhawIwuWhufZj5YrOUFuGOfq3fYouse0tWVZqNNp
+	CuUzNeHs2xbAKEQ8Srdo4eh7hcZWCJVDHu88G03SgKJ7H/28+3ExrDEJSEBEcP3/MoJdNJ7ufDB
+	iZnY0ISVke4gwvtbd+l2u0dTzEEt/YIZKanrfdZyZMFlN+N1qoEdoT4Sk9/ij6ARJfdgP8vYbYc
+	MYAe/4f9mH2+7TfTgITe3Eq3xWn3MQBqRp38s
+X-Received: by 2002:a05:6870:1491:b0:494:b8f4:9a22 with SMTP id
+ 586e51a60fabf-4a8bb4f52aamr237048fac.28.1793123671347; Tue, 27 Oct 2026
+ 10:54:31 -0700 (PDT)
+MIME-Version: 1.0
+From: Ernest Fink <ernestfink@gmail.com>
+Date: Tue, 27 Oct 2026 13:54:26 -0400
+X-Gm-Features: AclHuK8g7eAxAZ9lb6vzeYRDBXEmqIPAfMa2Bhh5Ga8oNliaXPZeUOn56kzi7Mw
+Message-ID: <CAPJYNc+9AFUsvD7hxsspPGDzNvxprGOuKz0jMo5bjn2YFpvR9A@mail.gmail.com>
+Subject: [CHFC Media] Over Head
+To: Dan Horning <dsoundmn@gmail.com>, mediateam@cityharvestalbany.com
+Content-Type: multipart/alternative; boundary="0000000000007817b2065ed623ad"
+X-Original-Sender: ernestfink@gmail.com
+X-Original-Authentication-Results: mx.google.com;       dkim=pass
+ header.i=@gmail.com header.s=20260707 header.b=OinBErKT;       arc=pass
+ (i=1);       spf=pass (google.com: domain of ernestfink@gmail.com designates
+ 209.85.220.41 as permitted sender) smtp.mailfrom=ernestfink@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=neutral header.i=@cityharvestalbany.com
+Reply-To: mediateam@cityharvestalbany.com
+Precedence: list
+Mailing-list: list mediateam@cityharvestalbany.com; contact mediateam+owners@cityharvestalbany.com
+List-ID: <mediateam.cityharvestalbany.com>
+X-Spam-Checked-In-Group: mediateam@cityharvestalbany.com
+X-Google-Group-Id: 414320174969
+List-Post: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/post>,
+ <mailto:mediateam@cityharvestalbany.com>
+List-Help: <https://support.google.com/a/cityharvestalbany.com/bin/topic.py?topic=25838>,
+ <mailto:mediateam+help@cityharvestalbany.com>
+List-Archive: <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/>
+List-Unsubscribe: <mailto:googlegroups-manage+414320174969+unsubscribe@googlegroups.com>,
+ <https://groups.google.com/a/cityharvestalbany.com/group/mediateam/subscribe>
+
+--0000000000007817b2065ed623ad
+Content-Type: text/plain; charset="UTF-8"
+
+*STRENGTH THAT NEVER FAILS*
+
+*Psalm 73:26 (ESV) *
+My flesh and my heart may fail, but God is the strength of my heart and my
+portion forever.
+
+*2 Corinthians 4:16 (NKJV) *
+Therefore we do not lose heart. Even though our outward man is perishing,
+yet the inward *man* is being renewed day by day.
+
+*2 Corinthians 4:18 (NKJV) *
+While we do not look at the things which are seen, but at the things which
+are not seen. For the things which are seen *are* temporary, but the things
+which are not seen *are* eternal.
+
+
+*Philippians 4:13 (ESV) *
+I can do all things through him who strengthens me.
+
+
+
+*2 Corinthians 12:10* <http://www.crossbooks.com/verse.asp?ref=2Co+12%3A10>
+
+For when I am weak, then am I strong
+
+
+
+*How Do We Not Look at the Things That Are Seen?*
+
+Here are Five Biblical ways
+
+*1. We Focus on God's Word rather than our Circumstances.*
+
+*Romans 10:17*
+
+So then *Faith* cometh by hearing, and hearing by the Word of God.
+
+
+
+*2. We Believe God's Promises even when we Cannot see them  *
+
+*    Fulfilled.*
+
+
+
+*2 Corinthians 5:7*
+
+                                                                     For we
+walk by *Faith*, not by sight.
+
+*Hebrews 11:1
+
+                                                                    *Now
+*Faith* is the substance of things Hoped for, the Evidence of things *Not*
+seen.
+
+
+
+*3. We Refuse to let Temporary Troubles control our Perspective.*
+
+
+
+*2 Corinthians 4:17* (*KJV): *
+
+For our light affliction, which is but for a moment, worketh for us a far
+more exceeding and eternal weight of glory.
+
+
+
+*4. We keep our Eyes on Jesus.*
+
+
+
+*5. We set our minds on eternal things.*
+
+*Colossians 3:2 (KJV)*
+
+Set your affection on things above, not on things on the earth
+
+
+--0000000000007817b2065ed623ad
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div class=3D"gmail_default" style=3D"font-size:large"><p =
+class=3D"MsoNormal" align=3D"center" style=3D"text-align:center;margin:0in =
+0in 8pt;line-height:115%;font-size:12pt;font-family:Aptos,sans-serif"><b><s=
+pan style=3D"font-size:18pt;line-height:115%;font-family:Arial,sans-serif">=
+STRENGTH
+THAT NEVER FAILS</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">Psalm 73:26 (ESV) </span></b><sp=
+an style=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-serif"><=
+br>
+My flesh and my heart may fail, but God is the strength of my heart and my
+portion forever. </span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">2 Corinthians 4:16 (NKJV) </span=
+></b><span style=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-=
+serif"><br>
+Therefore we do not lose heart. Even though our outward man is perishing, y=
+et
+the inward <i>man</i> is being renewed day by day.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">2 Corinthians 4:18 (NKJV) </span=
+></b><span style=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-=
+serif"><br>
+While we do not look at the things which are seen, but at the things which =
+are
+not seen. For the things which are seen <i>are</i> temporary, but the thing=
+s
+which are not seen <i>are</i> eternal.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12p=
+t;font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;font-family:A=
+rial,sans-serif"><br>
+<b>Philippians 4:13 (ESV) </b><br>
+I can do all things through him who strengthens me. </span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif">=C2=A0</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><a href=3D"http://www.crossbooks.com/verse.as=
+p?ref=3D2Co+12%3A10" style=3D"color:rgb(70,120,134)"><b><span style=3D"font=
+-size:14pt;line-height:115%;font-family:Arial,sans-serif;color:windowtext;t=
+ext-decoration:none">2 Corinthians 12:10</span></b></a><span style=3D"font-=
+size:14pt;line-height:115%;font-family:Arial,sans-serif"></span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">For when I am weak, then am I
+strong</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p><p class=3D"MsoNormal" sty=
+le=3D"margin:0in;line-height:115%;font-size:12pt;font-family:Aptos,sans-ser=
+if"><b style=3D"font-size:12pt;text-align:center;background-color:transpare=
+nt"><span style=3D"font-size:18pt;line-height:115%;font-family:Arial,sans-s=
+erif">How Do
+We Not Look at the Things That Are Seen?</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><span style=3D"font-size:18pt;line-he=
+ight:115%;font-family:Arial,sans-serif">Here are Five Biblical ways </span>=
+</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">1. We Focus on God&#39;s Word ra=
+ther than our
+Circumstances.</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">Romans 10:17</span></b><span style=3D"fo=
+nt-size:14pt;line-height:115%;font-family:Arial,sans-serif"></span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">So then <b>Faith</b> cometh by
+hearing, and hearing by the Word of God.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">2. We Believe God&#39;s Promises
+even when we Cannot see them=C2=A0 </span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">=C2=A0=C2=A0=C2=A0 Fulfilled.</span></b>=
+</p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">=C2=A0</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">2 Corinthians 5:7</span></b><spa=
+n style=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-serif">=
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0For we walk by <b>Faith</b>, n=
+ot
+by sight.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">Hebrews 11:1=C2=A0 =C2=A0 =C2=A0=
+ =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 </span></b><span style=3D"font-size:=
+14pt;line-height:115%;font-family:Arial,sans-serif">Now <b>Faith</b> is the=
+ substance of things Hoped for, the
+Evidence of things <b>Not</b> seen.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:normal;font-size:12p=
+t;font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;font-family:A=
+rial,sans-serif">=C2=A0</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">3. We Refuse to let Temporary Tr=
+oubles control
+our Perspective.</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">2 Corinthians 4:17</span></b><span style=
+=3D"font-size:14pt;line-height:115%;font-family:Arial,sans-serif"> (<b>KJV)=
+:
+</b></span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">For our light affliction,
+which is but for a moment, worketh for us a far more exceeding and eternal
+weight of glory.</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">4. We keep our Eyes on Jesus.</s=
+pan></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">=C2=A0</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in 0in 8pt;line-height:115%;font-si=
+ze:12pt;font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line=
+-height:115%;font-family:Arial,sans-serif">5. We set our minds on eternal t=
+hings.</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><b><span style=3D"font-size:14pt;line-height:=
+115%;font-family:Arial,sans-serif">Colossians 3:2 (KJV)</span></b></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">Set your affection on things
+above, not on things on the earth</span></p>
+
+<p class=3D"MsoNormal" style=3D"margin:0in;line-height:115%;font-size:12pt;=
+font-family:Aptos,sans-serif"><span style=3D"font-size:14pt;line-height:115=
+%;font-family:Arial,sans-serif">=C2=A0</span></p></div></div>
+
+
+--0000000000007817b2065ed623ad--
