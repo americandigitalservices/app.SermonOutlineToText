@@ -6,22 +6,20 @@ import SwiftUI
 //  Licensed under the GNU General Public License v3.0 (GPL-3.0)
 //
 
-extension Notification.Name {
-    static let resetAppPermissions = Notification.Name("resetAppPermissions")
-}
-
 @main
 struct SermonOutlineCleanerApp: App {
+    @State private var viewModel = SermonWorkspaceViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
         }
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(after: .appSettings) {
                 Divider()
                 Button {
-                    NotificationCenter.default.post(name: .resetAppPermissions, object: nil)
+                    viewModel.resetAppleEventsPermission(showConfirmationAlert: true)
                 } label: {
                     Label("Reset Permissions", systemImage: "gearshape.arrow.triangle.2.circlepath")
                 }

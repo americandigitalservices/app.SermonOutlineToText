@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 import UniformTypeIdentifiers
 import AppKit
 import ApplicationServices
@@ -9,47 +10,47 @@ import ApplicationServices
 //  Licensed under the GNU General Public License v3.0 (GPL-3.0)
 //
 
-struct PendingOutlineLoad: Identifiable {
+struct PendingOutlineLoad: Identifiable, Sendable {
     let id = UUID()
     let targetURL: URL
     let suggestedSpeaker: String
     let fallbackTitle: String?
 }
 
-struct ContentView: View {
+@Observable
+final class SermonWorkspaceViewModel {
+    var speakerName: String = ""
+    var currentFileURL: URL?
+    var currentFallbackTitle: String?
+    var lastSavedSermonTextURL: URL?
 
-    @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = (NSHomeDirectory() as NSString).appendingPathComponent("Desktop")
+    var pendingLoad: PendingOutlineLoad?
 
-    @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
+    var previewSpeaker: String = ""
+    var previewTitle: String = ""
+    var previewText: String = ""
+    var previewScriptures: String = ""
 
-    // Speaker Name starts blank on every launch
-    @State private var speakerName: String = ""
+    var lineCount: Int = 0
+    var scriptureCount: Int = 0
+    var statusMessage: String = "Drop a Sermon Outline (.docx, .pptx, .pdf, .eml, .txt) or click Select Outline"
+    var isTargeted: Bool = false
 
-    @State private var currentFileURL: URL? = nil
-    @State private var currentFallbackTitle: String? = nil
-    @State private var lastSavedSermonTextURL: URL? = nil
+    var showPermissionsResetAlert: Bool = false
+    var showAutomationBlockedAlert: Bool = false
 
-    // Drives the native SwiftUI Speaker Name sheet
-    @State private var pendingLoad: PendingOutlineLoad? = nil
+    init() {
+        Self.pruneStaleDropCacheDirectories()
+    }
 
-    @State private var previewSpeaker: String = ""
-    @State private var previewTitle: String = ""
-    @State private var previewText: String = ""
-    @State private var previewScriptures: String = ""
-
-    @State private var lineCount: Int = 0
-    @State private var scriptureCount: Int = 0
-    @State private var statusMessage: String = "Drop a Sermon Outline (.docx, .pptx, .pdf, .eml, .txt) or click Select Outline"
-    @State private var isTargeted: Bool = false
-
-    private var currentSermonTextFilename: String {
+    var currentSermonTextFilename: String {
         guard !previewText.isEmpty || !previewTitle.isEmpty else {
             return "Sermon.txt"
         }
         return sermonTextFilename(title: previewTitle)
     }
 
-    private func sermonTextFilename(title: String) -> String {
+    func sermonTextFilename(title: String) -> String {
         let safeTitle = sanitizeFilenameComponent(
             title.isEmpty ? "Untitled" : title,
             maxLength: 15
@@ -57,7 +58,7 @@ struct ContentView: View {
         return "Sermon-\(safeTitle).txt"
     }
 
-    private func sanitizeFilenameComponent(_ value: String, maxLength: Int = 15) -> String {
+    func sanitizeFilenameComponent(_ value: String, maxLength: Int = 15) -> String {
         let words = value
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
@@ -75,6 +76,71 @@ struct ContentView: View {
         }
         return String(joined.prefix(maxLength))
     }
+
+    func resetAppleEventsPermission(showConfirmationAlert: Bool = false) {
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.danielhorning.SermonOutlineCleaner"
+        let task = Process()
+        task.executableURL = URL(filePath: "/usr/bin/tccutil")
+        task.arguments = ["reset", "AppleEvents", bundleID]
+        do {
+            try task.run()
+            task.waitUntilExit()
+            statusMessage = "✓ Permissions reset. Click 'Import to ProPresenter' to be prompted again."
+            if showConfirmationAlert {
+                showPermissionsResetAlert = true
+            }
+        } catch {
+            statusMessage = "⚠️ Could not reset permissions: \(error.localizedDescription)"
+        }
+    }
+
+    static func pruneStaleDropCacheDirectories() {
+        let cachesBase = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let baseDropDir = cachesBase.appending(path: "SermonCleanerDrops", directoryHint: .isDirectory)
+        try? FileManager.default.removeItem(at: baseDropDir)
+    }
+
+    @concurrent
+    static func processOutlineInBackground(
+        url: URL,
+        speaker: String,
+        maxLineChars: Int,
+        fallbackTitle: String?
+    ) async throws -> SermonProcessingResult {
+        try SermonCleanerEngine.processSermonFile(
+            url: url,
+            speaker: speaker,
+            maxLineChars: maxLineChars,
+            fallbackTitle: fallbackTitle
+        )
+    }
+
+    @concurrent
+    static func executeAppleScriptInBackground(_ source: String) async -> (errorCode: Int, errorMessage: String)? {
+        var errorDict: NSDictionary?
+        guard let scriptObject = NSAppleScript(source: source) else {
+            return (errorCode: -1, errorMessage: "Could not compile AppleScript.")
+        }
+        scriptObject.executeAndReturnError(&errorDict)
+        if let err = errorDict {
+            let code = err[NSAppleScript.errorNumber] as? Int ?? 0
+            let msg = err[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
+            return (errorCode: code, errorMessage: msg)
+        }
+        return nil
+    }
+}
+
+struct ContentView: View {
+
+    @AppStorage("saveDirectoryPath") private var saveDirectoryPath: String = URL.homeDirectory
+        .appending(path: "Desktop", directoryHint: .isDirectory)
+        .path(percentEncoded: false)
+
+    @AppStorage("maxLineChars") private var maxLineChars: Int = SermonCleanerEngine.defaultMaxLineChars
+
+    @Bindable var viewModel = SermonWorkspaceViewModel()
 
     var body: some View {
         VStack(spacing: 14) {
@@ -96,7 +162,7 @@ struct ContentView: View {
                             .fontWeight(.semibold)
                             .frame(width: 105, alignment: .leading)
                         HStack(spacing: 12) {
-                            TextField("Leave blank to prompt on file load…", text: $speakerName)
+                            TextField("Leave blank to prompt on file load…", text: $viewModel.speakerName)
                                 .textFieldStyle(.roundedBorder)
                                 .onSubmit(applySpeakerChangeIfLoaded)
 
@@ -119,7 +185,7 @@ struct ContentView: View {
                         }
                         Button("Update Speaker", action: applySpeakerChangeIfLoaded)
                             .frame(width: 110)
-                            .disabled(currentFileURL == nil)
+                            .disabled(viewModel.currentFileURL == nil)
                     }
                 }
                 .padding(6)
@@ -129,12 +195,12 @@ struct ContentView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(
-                        isTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
+                        viewModel.isTargeted ? Color.accentColor : Color.secondary.opacity(0.35),
                         style: StrokeStyle(lineWidth: 2, dash: [6])
                     )
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(isTargeted ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
+                            .fill(viewModel.isTargeted ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
                     )
 
                 HStack(spacing: 16) {
@@ -143,7 +209,7 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(statusMessage)
+                        Text(viewModel.statusMessage)
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .lineLimit(1)
@@ -154,7 +220,7 @@ struct ContentView: View {
 
                     Spacer()
 
-                    if currentFileURL != nil {
+                    if viewModel.currentFileURL != nil {
                         Button("Re-Wrap (\(maxLineChars) ch)", action: reprocessIfLoaded)
                             .controlSize(.large)
                     }
@@ -172,27 +238,27 @@ struct ContentView: View {
                 HStack(spacing: 12) {
                     PreviewCard(
                         title: "MainSpeaker.txt",
-                        badge: previewSpeaker.isEmpty ? "—" : "1 line",
-                        text: previewSpeaker
+                        badge: viewModel.previewSpeaker.isEmpty ? "—" : "1 line",
+                        text: viewModel.previewSpeaker
                     )
                     PreviewCard(
                         title: "SermonTitle.txt",
-                        badge: previewTitle.isEmpty ? "—" : "1 line",
-                        text: previewTitle
+                        badge: viewModel.previewTitle.isEmpty ? "—" : "1 line",
+                        text: viewModel.previewTitle
                     )
                 }
                 .frame(height: 78)
 
                 HStack(spacing: 12) {
                     PreviewCard(
-                        title: currentSermonTextFilename,
-                        badge: "\(lineCount) lines • max \(maxLineChars) ch",
-                        text: previewText
+                        title: viewModel.currentSermonTextFilename,
+                        badge: "\(viewModel.lineCount) lines • max \(maxLineChars) ch",
+                        text: viewModel.previewText
                     )
                     PreviewCard(
                         title: "SermonScriptures.txt",
-                        badge: "\(scriptureCount) scriptures",
-                        text: previewScriptures
+                        badge: "\(viewModel.scriptureCount) scriptures",
+                        text: viewModel.previewScriptures
                     )
                 }
             }
@@ -213,29 +279,29 @@ struct ContentView: View {
                     Label("Import to ProPresenter", systemImage: "play.display")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(previewText.isEmpty)
+                .disabled(viewModel.previewText.isEmpty)
             }
         }
         .padding(16)
         .frame(minWidth: 760, minHeight: 560)
         .overlay(
             MailAwareDropView(
-                isTargeted: $isTargeted,
+                isTargeted: $viewModel.isTargeted,
                 onFileDropped: { url in
                     handleIncomingFile(url)
                 },
                 onError: { errMsg in
-                    statusMessage = errMsg
+                    viewModel.statusMessage = errMsg
                 }
             )
         )
-        .sheet(item: $pendingLoad) { item in
+        .sheet(item: $viewModel.pendingLoad) { item in
             SpeakerPromptSheet(
                 defaultSpeaker: item.suggestedSpeaker,
                 onConfirm: { enteredSpeaker in
-                    speakerName = enteredSpeaker
-                    lastSavedSermonTextURL = nil
-                    pendingLoad = nil
+                    viewModel.speakerName = enteredSpeaker
+                    viewModel.lastSavedSermonTextURL = nil
+                    viewModel.pendingLoad = nil
                     runSermonProcessor(
                         url: item.targetURL,
                         speaker: enteredSpeaker,
@@ -243,16 +309,31 @@ struct ContentView: View {
                     )
                 },
                 onCancel: {
-                    statusMessage = "Cancelled speaker name prompt."
-                    pendingLoad = nil
+                    viewModel.statusMessage = "Cancelled speaker name prompt."
+                    viewModel.pendingLoad = nil
                 }
             )
         }
+        .alert("Permissions Reset", isPresented: $viewModel.showPermissionsResetAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Automation permissions for SermonOutlineCleaner have been reset.\n\nNext time you click \"Import to ProPresenter\", macOS will ask for permission again.")
+        }
+        .alert("ProPresenter Automation Blocked", isPresented: $viewModel.showAutomationBlockedAlert) {
+            Button("Reset Permissions") {
+                viewModel.resetAppleEventsPermission(showConfirmationAlert: false)
+            }
+            Button("Open System Settings") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("SermonOutlineCleaner needs permission to launch ProPresenter and trigger the file import menu.\n\nClick \"Reset Permissions\" below, then click \"Import to ProPresenter\" again and select \"Allow\" when macOS prompts you.")
+        }
         .onOpenURL { url in
             handleIncomingFile(url)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .resetAppPermissions)) { _ in
-            resetAppleEventsPermission(showConfirmationAlert: true)
         }
     }
 
@@ -262,47 +343,6 @@ struct ContentView: View {
         NSApp.keyWindow?.makeFirstResponder(nil)
     }
 
-    private func resetAppleEventsPermission(showConfirmationAlert: Bool = false) {
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.danielhorning.SermonOutlineCleaner"
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
-        task.arguments = ["reset", "AppleEvents", bundleID]
-        do {
-            try task.run()
-            task.waitUntilExit()
-            statusMessage = "✓ Permissions reset. Click 'Import to ProPresenter' to be prompted again."
-            if showConfirmationAlert {
-                let alert = NSAlert()
-                alert.messageText = "Permissions Reset"
-                alert.informativeText = "Automation permissions for SermonOutlineCleaner have been reset.\n\nNext time you click \"Import to ProPresenter\", macOS will ask for permission again."
-                alert.alertStyle = .informational
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
-            }
-        } catch {
-            statusMessage = "⚠️ Could not reset permissions: \(error.localizedDescription)"
-        }
-    }
-
-    private func showAutomationBlockedAlert() {
-        let alert = NSAlert()
-        alert.messageText = "ProPresenter Automation Blocked"
-        alert.informativeText = "SermonOutlineCleaner needs permission to launch ProPresenter and trigger the file import menu.\n\nClick \"Reset Permissions\" below, then click \"Import to ProPresenter\" again and select \"Allow\" when macOS prompts you."
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "Reset Permissions")
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Cancel")
-
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            resetAppleEventsPermission(showConfirmationAlert: false)
-        } else if response == .alertSecondButtonReturn {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
-                NSWorkspace.shared.open(url)
-            }
-        }
-    }
-
     private func selectOutputDirectory() {
         commitActiveTextFields()
         let panel = NSOpenPanel()
@@ -310,11 +350,11 @@ struct ContentView: View {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.prompt = "Select Save Location"
-        panel.directoryURL = URL(fileURLWithPath: saveDirectoryPath)
+        panel.directoryURL = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
 
         if panel.runModal() == .OK, let url = panel.url {
-            saveDirectoryPath = url.path
-            lastSavedSermonTextURL = nil
+            saveDirectoryPath = url.path(percentEncoded: false)
+            viewModel.lastSavedSermonTextURL = nil
         }
     }
 
@@ -347,7 +387,7 @@ struct ContentView: View {
         NSApp.windows.first?.makeKeyAndOrderFront(nil)
 
         var targetURL = fileURL
-        let currentTypedSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentTypedSpeaker = viewModel.speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
         var suggestedSpeaker = currentTypedSpeaker.isEmpty
             ? SermonCleanerEngine.defaultSpeaker
             : currentTypedSpeaker
@@ -362,7 +402,7 @@ struct ContentView: View {
 
             if !inspection.attachments.isEmpty {
                 guard let chosenURL = promptForEmlSource(emlURL: fileURL, attachments: inspection.attachments) else {
-                    statusMessage = "Cancelled outline selection."
+                    viewModel.statusMessage = "Cancelled outline selection."
                     return
                 }
                 targetURL = chosenURL
@@ -376,7 +416,7 @@ struct ContentView: View {
         }
 
         // Always present the Speaker Name prompt sheet on every file drop or selection
-        pendingLoad = PendingOutlineLoad(
+        viewModel.pendingLoad = PendingOutlineLoad(
             targetURL: targetURL,
             suggestedSpeaker: suggestedSpeaker,
             fallbackTitle: fallbackTitle
@@ -402,14 +442,14 @@ struct ContentView: View {
 
         if index >= 0 && index < attachments.count {
             let chosen = attachments[index]
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("SermonCleanerAttachments", isDirectory: true)
+            let tempDir = FileManager.default.temporaryDirectory.appending(path: "SermonCleanerAttachments", directoryHint: .isDirectory)
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            let tempFileURL = tempDir.appendingPathComponent(chosen.filename)
+            let tempFileURL = tempDir.appending(path: chosen.filename)
             do {
                 try chosen.data.write(to: tempFileURL, options: .atomic)
                 return tempFileURL
             } catch {
-                statusMessage = "⚠️ Could not extract attachment: \(error.localizedDescription)"
+                viewModel.statusMessage = "⚠️ Could not extract attachment: \(error.localizedDescription)"
                 return nil
             }
         } else if index == attachments.count {
@@ -421,49 +461,53 @@ struct ContentView: View {
 
     private func applySpeakerChangeIfLoaded() {
         commitActiveTextFields()
-        guard currentFileURL != nil else { return }
+        guard viewModel.currentFileURL != nil else { return }
         reprocessIfLoaded()
     }
 
     private func reprocessIfLoaded() {
         commitActiveTextFields()
-        guard let url = currentFileURL else { return }
-        let activeSpeaker = speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = viewModel.currentFileURL else { return }
+        let activeSpeaker = viewModel.speakerName.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedSpeaker = activeSpeaker.isEmpty
-            ? (previewSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : previewSpeaker)
+            ? (viewModel.previewSpeaker.isEmpty ? SermonCleanerEngine.defaultSpeaker : viewModel.previewSpeaker)
             : activeSpeaker
-        runSermonProcessor(url: url, speaker: resolvedSpeaker, fallbackTitle: currentFallbackTitle)
+        runSermonProcessor(url: url, speaker: resolvedSpeaker, fallbackTitle: viewModel.currentFallbackTitle)
     }
 
     private func runSermonProcessor(url: URL, speaker: String, fallbackTitle: String?) {
-        do {
-            currentFileURL = url
-            currentFallbackTitle = fallbackTitle
+        viewModel.currentFileURL = url
+        viewModel.currentFallbackTitle = fallbackTitle
+        let limit = maxLineChars
 
-            let result = try SermonCleanerEngine.processSermonFile(
-                url: url,
-                speaker: speaker,
-                maxLineChars: maxLineChars,
-                fallbackTitle: fallbackTitle
-            )
+        Task {
+            do {
+                let result = try await SermonWorkspaceViewModel.processOutlineInBackground(
+                    url: url,
+                    speaker: speaker,
+                    maxLineChars: limit,
+                    fallbackTitle: fallbackTitle
+                )
 
-            previewSpeaker = result.speaker
-            previewTitle = result.title
-            previewText = result.lines.joined(separator: "\n")
-            previewScriptures = result.scriptures.joined(separator: "\n")
+                viewModel.previewSpeaker = result.speaker
+                viewModel.previewTitle = result.title
+                viewModel.previewText = result.lines.joined(separator: "\n")
+                viewModel.previewScriptures = result.scriptures.joined(separator: "\n")
 
-            lineCount = result.lines.count
-            scriptureCount = result.scriptures.count
+                viewModel.lineCount = result.lines.count
+                viewModel.scriptureCount = result.scriptures.count
 
-            let savedFilename = try writeFilesToDisk(
-                speaker: result.speaker,
-                title: result.title,
-                textBody: previewText,
-                scripturesBody: previewScriptures
-            )
-            statusMessage = "✓ Saved \(savedFilename) to \((saveDirectoryPath as NSString).abbreviatingWithTildeInPath)"
-        } catch {
-            statusMessage = "⚠️ Error: \(error.localizedDescription)"
+                let savedFilename = try writeFilesToDisk(
+                    speaker: result.speaker,
+                    title: result.title,
+                    textBody: viewModel.previewText,
+                    scripturesBody: viewModel.previewScriptures
+                )
+                let abbreviatedDir = (saveDirectoryPath as NSString).abbreviatingWithTildeInPath
+                viewModel.statusMessage = "✓ Saved \(savedFilename) to \(abbreviatedDir)"
+            } catch {
+                viewModel.statusMessage = "⚠️ Error: \(error.localizedDescription)"
+            }
         }
     }
 
@@ -474,25 +518,25 @@ struct ContentView: View {
         textBody: String,
         scripturesBody: String
     ) throws -> String {
-        let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
+        let outDir = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
         let cleanSpeaker = speaker.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let targetFilename = sermonTextFilename(title: cleanTitle)
-        let newSermonTextURL = outDir.appendingPathComponent(targetFilename)
+        let targetFilename = viewModel.sermonTextFilename(title: cleanTitle)
+        let newSermonTextURL = outDir.appending(path: targetFilename)
 
-        if let previousURL = lastSavedSermonTextURL,
+        if let previousURL = viewModel.lastSavedSermonTextURL,
            previousURL != newSermonTextURL,
-           FileManager.default.fileExists(atPath: previousURL.path) {
+           FileManager.default.fileExists(atPath: previousURL.path(percentEncoded: false)) {
             try? FileManager.default.removeItem(at: previousURL)
         }
 
         try cleanSpeaker
-            .write(to: outDir.appendingPathComponent("MainSpeaker.txt"), atomically: true, encoding: .utf8)
+            .write(to: outDir.appending(path: "MainSpeaker.txt"), atomically: true, encoding: .utf8)
 
         try cleanTitle
-            .write(to: outDir.appendingPathComponent("SermonTitle.txt"), atomically: true, encoding: .utf8)
+            .write(to: outDir.appending(path: "SermonTitle.txt"), atomically: true, encoding: .utf8)
 
         let trimmedText = textBody.trimmingCharacters(in: .whitespacesAndNewlines)
         try (trimmedText.isEmpty ? "" : trimmedText + "\n")
@@ -500,16 +544,16 @@ struct ContentView: View {
 
         let trimmedScrip = scripturesBody.trimmingCharacters(in: .whitespacesAndNewlines)
         try (trimmedScrip.isEmpty ? "" : trimmedScrip + "\n")
-            .write(to: outDir.appendingPathComponent("SermonScriptures.txt"), atomically: true, encoding: .utf8)
+            .write(to: outDir.appending(path: "SermonScriptures.txt"), atomically: true, encoding: .utf8)
 
-        lastSavedSermonTextURL = newSermonTextURL
+        viewModel.lastSavedSermonTextURL = newSermonTextURL
         return targetFilename
     }
 
     private func revealInFinder() {
-        let outDir = URL(fileURLWithPath: saveDirectoryPath, isDirectory: true)
-        let sermonTextURL = outDir.appendingPathComponent(currentSermonTextFilename)
-        if !previewText.isEmpty && FileManager.default.fileExists(atPath: sermonTextURL.path) {
+        let outDir = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
+        let sermonTextURL = outDir.appending(path: viewModel.currentSermonTextFilename)
+        if !viewModel.previewText.isEmpty && FileManager.default.fileExists(atPath: sermonTextURL.path(percentEncoded: false)) {
             NSWorkspace.shared.activateFileViewerSelecting([sermonTextURL])
         } else {
             NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: saveDirectoryPath)
@@ -521,18 +565,20 @@ struct ContentView: View {
         let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
         let options = [promptKey: true] as CFDictionary
         guard AXIsProcessTrustedWithOptions(options) else {
-            statusMessage = "⚠️ Please enable SermonOutlineCleaner in System Settings > Privacy & Security > Accessibility, then click Import again."
+            viewModel.statusMessage = "⚠️ Please enable SermonOutlineCleaner in System Settings > Privacy & Security > Accessibility, then click Import again."
             return
         }
 
         let targetFilename = (try? writeFilesToDisk(
-            speaker: previewSpeaker,
-            title: previewTitle,
-            textBody: previewText,
-            scripturesBody: previewScriptures
-        )) ?? currentSermonTextFilename
+            speaker: viewModel.previewSpeaker,
+            title: viewModel.previewTitle,
+            textBody: viewModel.previewText,
+            scripturesBody: viewModel.previewScriptures
+        )) ?? viewModel.currentSermonTextFilename
 
-        let sermonFilePath = (saveDirectoryPath as NSString).appendingPathComponent(targetFilename)
+        let sermonFilePath = URL(filePath: saveDirectoryPath, directoryHint: .isDirectory)
+            .appending(path: targetFilename)
+            .path(percentEncoded: false)
 
         // Set the file path on the clipboard natively in Swift (avoids AppleScript string escaping issues)
         NSPasteboard.general.clearContents()
@@ -540,97 +586,83 @@ struct ContentView: View {
 
         let proBundleID = "com.renewedvision.propresenter"
         let proAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: proBundleID)
-            ?? URL(fileURLWithPath: "/Applications/ProPresenter.app")
+            ?? URL(filePath: "/Applications/ProPresenter.app")
 
-        guard FileManager.default.fileExists(atPath: proAppURL.path) else {
-            statusMessage = "⚠️ Could not find ProPresenter.app in /Applications."
+        guard FileManager.default.fileExists(atPath: proAppURL.path(percentEncoded: false)) else {
+            viewModel.statusMessage = "⚠️ Could not find ProPresenter.app in /Applications."
             return
         }
 
-        statusMessage = "⏳ Launching ProPresenter and waiting for main window…"
+        viewModel.statusMessage = "⏳ Launching ProPresenter and waiting for main window…"
 
         let config = NSWorkspace.OpenConfiguration()
         config.activates = true
 
-        NSWorkspace.shared.openApplication(at: proAppURL, configuration: config) { runningApp, error in
-            if let error = error {
-                DispatchQueue.main.async {
-                    self.statusMessage = "⚠️ Failed to launch ProPresenter: \(error.localizedDescription)"
-                }
-                return
-            }
+        Task {
+            do {
+                let runningApp = try await NSWorkspace.shared.openApplication(at: proAppURL, configuration: config)
+                NSApp.deactivate()
+                runningApp.activate()
 
-            let scriptSource = """
-            tell application "System Events"
-                set isReady to false
-                repeat 90 times
-                    if exists process "ProPresenter" then
-                        tell process "ProPresenter"
-                            if (count of windows) > 0 and (exists menu bar item "File" of menu bar 1) then
-                                set isReady to true
-                                exit repeat
-                            end if
-                        end tell
+                let scriptSource = """
+                tell application "System Events"
+                    set isReady to false
+                    repeat 90 times
+                        if exists process "ProPresenter" then
+                            tell process "ProPresenter"
+                                if (count of windows) > 0 and (exists menu bar item "File" of menu bar 1) then
+                                    set isReady to true
+                                    exit repeat
+                                end if
+                            end tell
+                        end if
+                        delay 0.5
+                    end repeat
+                    
+                    if not isReady then
+                        error "ProPresenter did not finish loading its main window in time."
                     end if
-                    delay 0.5
-                end repeat
-                
-                if not isReady then
-                    error "ProPresenter did not finish loading its main window in time."
-                end if
-                
-                delay 0.8
-                tell process "ProPresenter"
-                    set frontmost to true
-                    delay 0.5
-                    try
-                        click menu item "File…" of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
-                    on error
-                        try
-                            click menu item "File..." of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
-                        on error
-                            keystroke "i" using {shift down, command down}
-                        end try
-                    end try
+                    
                     delay 0.8
-                    keystroke "g" using {shift down, command down}
-                    delay 0.6
-                    keystroke "v" using {command down}
-                    delay 0.4
-                    key code 36
-                    delay 0.5
-                    key code 36
-                    delay 0.9
-                    key code 36
+                    tell process "ProPresenter"
+                        set frontmost to true
+                        delay 0.5
+                        try
+                            click menu item "File…" of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
+                        on error
+                            try
+                                click menu item "File..." of menu 1 of menu item "Import" of menu 1 of menu bar item "File" of menu bar 1
+                            on error
+                                keystroke "i" using {shift down, command down}
+                            end try
+                        end try
+                        delay 0.8
+                        keystroke "g" using {shift down, command down}
+                        delay 0.6
+                        keystroke "v" using {command down}
+                        delay 0.4
+                        key code 36
+                        delay 0.5
+                        key code 36
+                        delay 0.9
+                        key code 36
+                    end tell
                 end tell
-            end tell
-            """
+                """
 
-            DispatchQueue.global(qos: .userInitiated).async {
-                DispatchQueue.main.async {
-                    NSApp.deactivate()
-                    runningApp?.activate()
-                }
-
-                var errorDict: NSDictionary?
-                if let scriptObject = NSAppleScript(source: scriptSource) {
-                    scriptObject.executeAndReturnError(&errorDict)
-                    DispatchQueue.main.async {
-                        if let err = errorDict {
-                            let code = err[NSAppleScript.errorNumber] as? Int ?? 0
-                            let msg = err[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
-                            if code == -1743 {
-                                self.statusMessage = "⚠️ Automation permission denied (-1743)."
-                                self.showAutomationBlockedAlert()
-                            } else {
-                                self.statusMessage = "⚠️ ProPresenter Import Error (\(code)): \(msg)"
-                            }
-                        } else {
-                            runningApp?.activate()
-                            self.statusMessage = "✓ Imported \(targetFilename) into ProPresenter"
-                        }
+                if let scriptError = await SermonWorkspaceViewModel.executeAppleScriptInBackground(scriptSource) {
+                    if scriptError.errorCode == -1743 {
+                        viewModel.statusMessage = "⚠️ Automation permission denied (-1743)."
+                        viewModel.showAutomationBlockedAlert = true
+                    } else {
+                        viewModel.statusMessage = "⚠️ ProPresenter Import Error (\(scriptError.errorCode)): \(scriptError.errorMessage)"
                     }
+                } else {
+                    runningApp.activate()
+                    viewModel.statusMessage = "✓ Imported \(targetFilename) into ProPresenter"
                 }
+            } catch {
+                viewModel.statusMessage = "⚠️ Failed to launch ProPresenter: \(error.localizedDescription)"
             }
         }
     }
@@ -663,6 +695,7 @@ struct SpeakerPromptSheet: View {
             TextField(SermonCleanerEngine.defaultSpeaker, text: $enteredName)
                 .textFieldStyle(.roundedBorder)
                 .focused($isTextFieldFocused)
+                .defaultFocus($isTextFieldFocused, true)
                 .onSubmit {
                     submit()
                 }
@@ -687,9 +720,7 @@ struct SpeakerPromptSheet: View {
         .onAppear {
             enteredName = defaultSpeaker
             NSApp.activate()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                isTextFieldFocused = true
-            }
+            isTextFieldFocused = true
         }
     }
 
@@ -789,17 +820,17 @@ struct MailAwareDropView: NSViewRepresentable {
     func makeNSView(context: Context) -> DropReceivingNSView {
         let view = DropReceivingNSView()
         view.onTargetChanged = { targeted in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.isTargeted = targeted
             }
         }
         view.onFileReceived = { url in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.onFileDropped(url)
             }
         }
         view.onError = { msg in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.onError(msg)
             }
         }
@@ -862,21 +893,6 @@ struct MailAwareDropView: NSViewRepresentable {
             onTargetChanged?(false)
             let pboard = sender.draggingPasteboard
 
-            // Create a fresh per-drop folder inside ~/Library/Caches so Apple Mail's sandboxed
-            // file-promise daemon never collides with deleted/locked /var/folders directories.
-            let cachesBase = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-                ?? FileManager.default.temporaryDirectory
-            let baseDropDir = cachesBase.appendingPathComponent("SermonCleanerDrops", isDirectory: true)
-            let uniqueDropDir = baseDropDir.appendingPathComponent(UUID().uuidString, isDirectory: true)
-            try? FileManager.default.createDirectory(at: uniqueDropDir, withIntermediateDirectories: true)
-
-            // Snapshot any raw email data on the pasteboard BEFORE returning from performDragOperation
-            let rawMailTypes = [
-                NSPasteboard.PasteboardType("com.apple.mail.email"),
-                NSPasteboard.PasteboardType(UTType.emailMessage.identifier)
-            ]
-            let snapshottedMailData: Data? = rawMailTypes.compactMap { pboard.data(forType: $0) }.first { !$0.isEmpty }
-
             // 1. Standard Finder File URLs (if a real file:// URL is already on the pasteboard, use it first!)
             if let urls = pboard.readObjects(
                 forClasses: [NSURL.self],
@@ -886,6 +902,20 @@ struct MailAwareDropView: NSViewRepresentable {
                 return true
             }
 
+            // Create a fresh per-drop folder inside ~/Library/Caches only when handling promised/raw Mail drops
+            let cachesBase = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            let baseDropDir = cachesBase.appending(path: "SermonCleanerDrops", directoryHint: .isDirectory)
+            let uniqueDropDir = baseDropDir.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: uniqueDropDir, withIntermediateDirectories: true)
+
+            // Snapshot any raw email data on the pasteboard BEFORE returning from performDragOperation
+            let rawMailTypes = [
+                NSPasteboard.PasteboardType("com.apple.mail.email"),
+                NSPasteboard.PasteboardType(UTType.emailMessage.identifier)
+            ]
+            let snapshottedMailData: Data? = rawMailTypes.compactMap { pboard.data(forType: $0) }.first { !$0.isEmpty }
+
             // 2. Handle Apple Mail File Promises (Emails & Attachments dragged directly from Mail.app)
             if let receivers = pboard.readObjects(forClasses: [NSFilePromiseReceiver.self], options: nil) as? [NSFilePromiseReceiver],
                let firstReceiver = receivers.first {
@@ -894,11 +924,11 @@ struct MailAwareDropView: NSViewRepresentable {
                     options: [:],
                     operationQueue: promiseQueue
                 ) { [weak self] fileURL, error in
-                    guard let self = self else { return }
-                    if error != nil {
+                    guard let self else { return }
+                    if let error {
                         // Fallback A: Use snapshotted raw RFC-822 data if present
                         if let data = snapshottedMailData {
-                            let destURL = uniqueDropDir.appendingPathComponent("DroppedEmail.eml")
+                            let destURL = uniqueDropDir.appending(path: "DroppedEmail.eml")
                             if (try? data.write(to: destURL, options: .atomic)) != nil {
                                 self.onFileReceived?(destURL)
                                 return
@@ -909,7 +939,7 @@ struct MailAwareDropView: NSViewRepresentable {
                             self.onFileReceived?(fallbackURL)
                             return
                         }
-                        self.onError?("⚠️ Mail drop error: \(error!.localizedDescription)")
+                        self.onError?("⚠️ Mail drop error: \(error.localizedDescription)")
                     } else {
                         self.onFileReceived?(fileURL)
                     }
@@ -919,7 +949,7 @@ struct MailAwareDropView: NSViewRepresentable {
 
             // 3. Direct Raw RFC-822 / .eml data on the pasteboard
             if let data = snapshottedMailData {
-                let destURL = uniqueDropDir.appendingPathComponent("DroppedEmail.eml")
+                let destURL = uniqueDropDir.appending(path: "DroppedEmail.eml")
                 do {
                     try data.write(to: destURL, options: .atomic)
                     onFileReceived?(destURL)
@@ -958,7 +988,7 @@ struct MailAwareDropView: NSViewRepresentable {
                   !rawSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 return nil
             }
-            let destURL = directory.appendingPathComponent("DroppedEmail.eml")
+            let destURL = directory.appending(path: "DroppedEmail.eml")
             do {
                 try rawSource.write(to: destURL, atomically: true, encoding: .utf8)
                 return destURL
